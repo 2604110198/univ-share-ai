@@ -20,18 +20,21 @@ export type Database = {
           email: string
           id: string
           note: string | null
+          professor_name: string | null
         }
         Insert: {
           created_at?: string
           email: string
           id?: string
           note?: string | null
+          professor_name?: string | null
         }
         Update: {
           created_at?: string
           email?: string
           id?: string
           note?: string | null
+          professor_name?: string | null
         }
         Relationships: []
       }
@@ -41,18 +44,21 @@ export type Database = {
           id: string
           note: string | null
           student_id: string
+          student_name: string | null
         }
         Insert: {
           created_at?: string
           id?: string
           note?: string | null
           student_id: string
+          student_name?: string | null
         }
         Update: {
           created_at?: string
           id?: string
           note?: string | null
           student_id?: string
+          student_name?: string | null
         }
         Relationships: []
       }
@@ -193,6 +199,7 @@ export type Database = {
         Args: { _folder_id: string; _user_id: string }
         Returns: boolean
       }
+      update_my_profile: { Args: { _full_name: string }; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "professor" | "student"
