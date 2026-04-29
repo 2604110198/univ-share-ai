@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { FolderOpen, Plus, Calendar, BookMarked, Sparkles } from "lucide-react";
+import { FolderOpen, Plus, Calendar, BookMarked } from "lucide-react";
 import { formatDate } from "@/lib/format";
 
 export const Route = createFileRoute("/dashboard")({
@@ -31,11 +31,10 @@ interface FolderRow {
 }
 
 function DashboardPage() {
-  const { user, profile, loading, refreshProfile } = useAuth();
+  const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
   const [folders, setFolders] = useState<FolderRow[]>([]);
   const [loadingFolders, setLoadingFolders] = useState(true);
-  const [adminExists, setAdminExists] = useState<boolean | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
 
   useEffect(() => {
@@ -62,22 +61,8 @@ function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    if (user && profile) {
-      loadFolders();
-      supabase.rpc("admin_exists").then(({ data }) => setAdminExists(Boolean(data)));
-    }
+    if (user && profile) loadFolders();
   }, [user, profile, loadFolders]);
-
-  const claimAdmin = async () => {
-    const { error } = await supabase.rpc("bootstrap_admin");
-    if (error) {
-      toast.error("관리자 전환 실패", { description: error.message });
-      return;
-    }
-    toast.success("관리자로 전환되었습니다");
-    await refreshProfile();
-    setAdminExists(true);
-  };
 
   if (loading || !profile) {
     return (
@@ -105,25 +90,6 @@ function DashboardPage() {
             <CreateFolderDialog open={createOpen} onOpenChange={setCreateOpen} onCreated={loadFolders} />
           )}
         </div>
-
-        {/* Bootstrap admin banner */}
-        {adminExists === false && (
-          <div className="mb-8 rounded-lg border border-accent bg-accent/10 p-5 flex items-start gap-4">
-            <div className="h-10 w-10 rounded-md bg-accent text-accent-foreground grid place-items-center shrink-0">
-              <Sparkles className="h-5 w-5" />
-            </div>
-            <div className="flex-1">
-              <h3 className="font-serif font-bold text-base mb-1">최초 관리자가 아직 없습니다</h3>
-              <p className="text-sm text-muted-foreground mb-3">
-                이 시스템을 처음 시작하셨다면, 본 계정을 관리자로 전환해 학번/교수 이메일 등록을 시작하세요.
-                관리자가 한 명이라도 존재하면 이 옵션은 사라집니다.
-              </p>
-              <Button size="sm" onClick={claimAdmin} className="bg-accent text-accent-foreground hover:bg-accent/90">
-                내 계정을 관리자로 전환
-              </Button>
-            </div>
-          </div>
-        )}
 
         {/* Materials section */}
         <Section title="강의 자료" icon={BookMarked} count={materialFolders.length}>
