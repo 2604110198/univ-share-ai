@@ -39,6 +39,12 @@ function Index() {
                 <span className="h-1.5 w-1.5 rounded-full bg-accent" />
                 {SCHOOL_NAME}
               </div>
+              {greeting && (
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/20 border border-accent/40 text-accent-foreground/90 text-sm font-medium mb-6">
+                  <Sparkles className="h-4 w-4 text-accent" />
+                  {greeting}
+                </div>
+              )}
               <h1 className="text-4xl md:text-6xl font-serif font-bold leading-[1.1]">
                 {DEPARTMENT_NAME}<br />
                 <span className="text-accent">학과 전용 디스크</span>
@@ -48,8 +54,14 @@ function Index() {
                 관리자가 등록한 학번과 교수 이메일만 가입 가능합니다.
               </p>
               <div className="mt-10 flex flex-wrap gap-3">
-                <Link to="/login"><Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90">로그인</Button></Link>
-                <Link to="/signup"><Button size="lg" variant="outline" className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10">회원가입</Button></Link>
+                {user ? (
+                  <Link to="/dashboard"><Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90">강의실로 이동</Button></Link>
+                ) : (
+                  <>
+                    <Link to="/login"><Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90">로그인</Button></Link>
+                    <Link to="/signup"><Button size="lg" variant="outline" className="border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10">회원가입</Button></Link>
+                  </>
+                )}
               </div>
             </div>
           </div>
