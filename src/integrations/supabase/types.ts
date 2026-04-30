@@ -62,14 +62,52 @@ export type Database = {
         }
         Relationships: []
       }
-      files: {
+      courses: {
+        Row: {
+          classroom: string | null
+          created_at: string
+          description: string | null
+          end_time: string
+          id: string
+          name: string
+          professor_id: string | null
+          professor_name: string | null
+          start_time: string
+          weekday: Database["public"]["Enums"]["weekday"]
+        }
+        Insert: {
+          classroom?: string | null
+          created_at?: string
+          description?: string | null
+          end_time: string
+          id?: string
+          name: string
+          professor_id?: string | null
+          professor_name?: string | null
+          start_time: string
+          weekday: Database["public"]["Enums"]["weekday"]
+        }
+        Update: {
+          classroom?: string | null
+          created_at?: string
+          description?: string | null
+          end_time?: string
+          id?: string
+          name?: string
+          professor_id?: string | null
+          professor_name?: string | null
+          start_time?: string
+          weekday?: Database["public"]["Enums"]["weekday"]
+        }
+        Relationships: []
+      }
+      post_attachments: {
         Row: {
           created_at: string
           file_name: string
-          folder_id: string
           id: string
-          kind: Database["public"]["Enums"]["file_kind"]
           mime_type: string | null
+          post_id: string
           size_bytes: number
           storage_path: string
           uploader_id: string
@@ -77,10 +115,9 @@ export type Database = {
         Insert: {
           created_at?: string
           file_name: string
-          folder_id: string
           id?: string
-          kind?: Database["public"]["Enums"]["file_kind"]
           mime_type?: string | null
+          post_id: string
           size_bytes: number
           storage_path: string
           uploader_id: string
@@ -88,53 +125,91 @@ export type Database = {
         Update: {
           created_at?: string
           file_name?: string
-          folder_id?: string
           id?: string
-          kind?: Database["public"]["Enums"]["file_kind"]
           mime_type?: string | null
+          post_id?: string
           size_bytes?: number
           storage_path?: string
           uploader_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "files_folder_id_fkey"
-            columns: ["folder_id"]
+            foreignKeyName: "post_attachments_post_id_fkey"
+            columns: ["post_id"]
             isOneToOne: false
-            referencedRelation: "folders"
+            referencedRelation: "posts"
             referencedColumns: ["id"]
           },
         ]
       }
-      folders: {
+      posts: {
         Row: {
+          author_id: string
+          author_name: string
+          author_role: Database["public"]["Enums"]["app_role"]
+          category: Database["public"]["Enums"]["post_category"]
+          content: string | null
+          course_id: string | null
           created_at: string
-          description: string | null
           due_date: string | null
           id: string
-          is_assignment: boolean
-          name: string
-          owner_id: string
+          inquiry_target_professor_id: string | null
+          is_pinned: boolean
+          parent_post_id: string | null
+          title: string
+          updated_at: string
+          view_count: number
         }
         Insert: {
+          author_id: string
+          author_name: string
+          author_role: Database["public"]["Enums"]["app_role"]
+          category: Database["public"]["Enums"]["post_category"]
+          content?: string | null
+          course_id?: string | null
           created_at?: string
-          description?: string | null
           due_date?: string | null
           id?: string
-          is_assignment?: boolean
-          name: string
-          owner_id: string
+          inquiry_target_professor_id?: string | null
+          is_pinned?: boolean
+          parent_post_id?: string | null
+          title: string
+          updated_at?: string
+          view_count?: number
         }
         Update: {
+          author_id?: string
+          author_name?: string
+          author_role?: Database["public"]["Enums"]["app_role"]
+          category?: Database["public"]["Enums"]["post_category"]
+          content?: string | null
+          course_id?: string | null
           created_at?: string
-          description?: string | null
           due_date?: string | null
           id?: string
-          is_assignment?: boolean
-          name?: string
-          owner_id?: string
+          inquiry_target_professor_id?: string | null
+          is_pinned?: boolean
+          parent_post_id?: string | null
+          title?: string
+          updated_at?: string
+          view_count?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "posts_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_parent_post_id_fkey"
+            columns: ["parent_post_id"]
+            isOneToOne: false
+            referencedRelation: "posts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -195,15 +270,18 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_folder_owner: {
-        Args: { _folder_id: string; _user_id: string }
-        Returns: boolean
-      }
+      increment_post_view: { Args: { _post_id: string }; Returns: undefined }
       update_my_profile: { Args: { _full_name: string }; Returns: undefined }
     }
     Enums: {
       app_role: "admin" | "professor" | "student"
-      file_kind: "material" | "submission"
+      post_category:
+        | "material"
+        | "assignment"
+        | "notice"
+        | "inquiry"
+        | "submission"
+      weekday: "mon" | "tue" | "wed" | "thu" | "fri"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -332,7 +410,14 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "professor", "student"],
-      file_kind: ["material", "submission"],
+      post_category: [
+        "material",
+        "assignment",
+        "notice",
+        "inquiry",
+        "submission",
+      ],
+      weekday: ["mon", "tue", "wed", "thu", "fri"],
     },
   },
 } as const
