@@ -18,6 +18,8 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AssignmentsRouteImport } from './routes/assignments'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PostNewRouteImport } from './routes/post.new'
+import { Route as PostPostIdRouteImport } from './routes/post.$postId'
 import { Route as AssignmentsCourseIdRouteImport } from './routes/assignments.$courseId'
 
 const SignupRoute = SignupRouteImport.update({
@@ -65,6 +67,16 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PostNewRoute = PostNewRouteImport.update({
+  id: '/post/new',
+  path: '/post/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PostPostIdRoute = PostPostIdRouteImport.update({
+  id: '/post/$postId',
+  path: '/post/$postId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AssignmentsCourseIdRoute = AssignmentsCourseIdRouteImport.update({
   id: '/$courseId',
   path: '/$courseId',
@@ -82,6 +94,8 @@ export interface FileRoutesByFullPath {
   '/notices': typeof NoticesRoute
   '/signup': typeof SignupRoute
   '/assignments/$courseId': typeof AssignmentsCourseIdRoute
+  '/post/$postId': typeof PostPostIdRoute
+  '/post/new': typeof PostNewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -94,6 +108,8 @@ export interface FileRoutesByTo {
   '/notices': typeof NoticesRoute
   '/signup': typeof SignupRoute
   '/assignments/$courseId': typeof AssignmentsCourseIdRoute
+  '/post/$postId': typeof PostPostIdRoute
+  '/post/new': typeof PostNewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -107,6 +123,8 @@ export interface FileRoutesById {
   '/notices': typeof NoticesRoute
   '/signup': typeof SignupRoute
   '/assignments/$courseId': typeof AssignmentsCourseIdRoute
+  '/post/$postId': typeof PostPostIdRoute
+  '/post/new': typeof PostNewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -121,6 +139,8 @@ export interface FileRouteTypes {
     | '/notices'
     | '/signup'
     | '/assignments/$courseId'
+    | '/post/$postId'
+    | '/post/new'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -133,6 +153,8 @@ export interface FileRouteTypes {
     | '/notices'
     | '/signup'
     | '/assignments/$courseId'
+    | '/post/$postId'
+    | '/post/new'
   id:
     | '__root__'
     | '/'
@@ -145,6 +167,8 @@ export interface FileRouteTypes {
     | '/notices'
     | '/signup'
     | '/assignments/$courseId'
+    | '/post/$postId'
+    | '/post/new'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -157,6 +181,8 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   NoticesRoute: typeof NoticesRoute
   SignupRoute: typeof SignupRoute
+  PostPostIdRoute: typeof PostPostIdRoute
+  PostNewRoute: typeof PostNewRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -224,6 +250,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/post/new': {
+      id: '/post/new'
+      path: '/post/new'
+      fullPath: '/post/new'
+      preLoaderRoute: typeof PostNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/post/$postId': {
+      id: '/post/$postId'
+      path: '/post/$postId'
+      fullPath: '/post/$postId'
+      preLoaderRoute: typeof PostPostIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/assignments/$courseId': {
       id: '/assignments/$courseId'
       path: '/$courseId'
@@ -256,6 +296,8 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   NoticesRoute: NoticesRoute,
   SignupRoute: SignupRoute,
+  PostPostIdRoute: PostPostIdRoute,
+  PostNewRoute: PostNewRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

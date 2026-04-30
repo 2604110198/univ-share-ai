@@ -9,7 +9,9 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Trash2, UserCog, GraduationCap, Users, Settings } from "lucide-react";
+import { Trash2, UserCog, GraduationCap, Users, Settings, BookOpen } from "lucide-react";
+import { WEEKDAY_LABEL, WEEKDAY_ORDER } from "@/lib/format";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ROLE_LABEL, formatDate } from "@/lib/format";
 import { validatePassword } from "@/lib/credentials";
 
@@ -52,21 +54,15 @@ function AdminPage() {
             <TabsTrigger value="settings"><Settings className="h-4 w-4 mr-1.5" />관리자 설정</TabsTrigger>
             <TabsTrigger value="students"><GraduationCap className="h-4 w-4 mr-1.5" />허용 학번</TabsTrigger>
             <TabsTrigger value="professors"><UserCog className="h-4 w-4 mr-1.5" />허용 교수</TabsTrigger>
+            <TabsTrigger value="courses"><BookOpen className="h-4 w-4 mr-1.5" />강의 관리</TabsTrigger>
             <TabsTrigger value="users"><Users className="h-4 w-4 mr-1.5" />가입 사용자</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="settings" className="mt-6">
-            <AdminSettingsPanel />
-          </TabsContent>
-          <TabsContent value="students" className="mt-6">
-            <AllowedStudentsPanel />
-          </TabsContent>
-          <TabsContent value="professors" className="mt-6">
-            <AllowedProfessorsPanel />
-          </TabsContent>
-          <TabsContent value="users" className="mt-6">
-            <UsersPanel />
-          </TabsContent>
+          <TabsContent value="settings" className="mt-6"><AdminSettingsPanel /></TabsContent>
+          <TabsContent value="students" className="mt-6"><AllowedStudentsPanel /></TabsContent>
+          <TabsContent value="professors" className="mt-6"><AllowedProfessorsPanel /></TabsContent>
+          <TabsContent value="courses" className="mt-6"><CoursesPanel /></TabsContent>
+          <TabsContent value="users" className="mt-6"><UsersPanel /></TabsContent>
         </Tabs>
       </main>
     </div>
