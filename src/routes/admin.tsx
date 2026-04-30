@@ -358,3 +358,113 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
     </div>
   );
 }
+
+interface CourseRow {
+  id: string; name: string; weekday: string;
+  start_time: string; end_time: string; classroom: string | null;
+  professor_id: string | null; professor_name: string | null;
+}
+
+function CoursesPanel() {
+  const [rows, setRows] = useState<CourseRow[]>([]);
+  const [profs, setProfs] = useState<{ id: string; full_name: string }[]>([]);
+  const [name, setName] = useState("");
+  const [weekday, setWeekday] = useState<string>("mon");
+  const [startTime, setStartTime] = useState("09:00");
+  const [endTime, setEndTime] = useState("10:30");
+  const [classroom, setClassroom] = useState("");
+  const [profId, setProfId] = useState("");
+
+  const load = useCallback(async () => {
+    const { data } = await supabase.from("courses").select("*").order("weekday").order("start_time");
+    setRows((data ?? []) as CourseRow[]);
+    const { data: ps } = await supabase.from("profiles").select("id, full_name").eq("role", "professor");
+    setProfs((ps ?? []) as { id: string; full_name: string }[]);
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  const add = async () => {
+    if (!name.trim()) { toast.error("강의명을 입력하세요"); return; }
+    const prof = profs.find((p) => p.id === profId);
+    const { error } = await supabase.from("courses").insert({
+      name: name.trim(),
+      weekday: weekday as "mon" | "tue" | "wed" | "thu" | "fri",
+      start_time: startTime,
+      end_time: endTime,
+      classroom: classroom.trim() || null,
+      professor_id: profId || null,
+      professor_name: prof?.full_name ?? null,
+    });
+    if (error) { toast.error("등록 실패", { description: error.message }); return; }
+    toast.success("강의가 등록되었습니다");
+    setName(""); setClassroom(""); setProfId("");
+    load();
+  };
+
+  const remove = async (id: string) => {
+    if (!confirm("정말 삭제하시겠습니까?")) return;
+    const { error } = await supabase.from("courses").delete().eq("id", id);
+    if (error) { toast.error("삭제 실패", { description: error.message }); return; }
+    load();
+  };
+
+  return (
+    <div className="grid lg:grid-cols-2 gap-6">
+      <Card title="강의 등록">
+        <div className="space-y-3">
+          <div className="space-y-2"><Label>강의명</Label><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="예: 반도체공정실습" /></div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label>요일</Label>
+              <Select value={weekday} onValueChange={setWeekday}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {WEEKDAY_ORDER.map((d) => <SelectItem key={d} value={d}>{WEEKDAY_LABEL[d]}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>강의실</Label>
+              <Input value={classroom} onChange={(e) => setClassroom(e.target.value)} placeholder="예: 301호" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2"><Label>시작 시간</Label><Input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} /></div>
+            <div className="space-y-2"><Label>종료 시간</Label><Input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} /></div>
+          </div>
+          <div className="space-y-2">
+            <Label>담당 교수</Label>
+            <Select value={profId} onValueChange={setProfId}>
+              <SelectTrigger><SelectValue placeholder="가입한 교수 중 선택 (선택사항)" /></SelectTrigger>
+              <SelectContent>
+                {profs.map((p) => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button onClick={add} className="w-full">등록</Button>
+        </div>
+      </Card>
+
+      <Card title={`등록된 강의 (${rows.length})`}>
+        <div className="max-h-[600px] overflow-auto divide-y divide-border -m-4">
+          {rows.length === 0 && <div className="p-6 text-center text-sm text-muted-foreground">등록된 강의가 없습니다.</div>}
+          {rows.map((r) => (
+            <div key={r.id} className="flex items-center justify-between p-3 hover:bg-secondary/40">
+              <div>
+                <div className="font-medium">{r.name}</div>
+                <div className="text-xs text-muted-foreground">
+                  {WEEKDAY_LABEL[r.weekday]} {r.start_time.slice(0, 5)}~{r.end_time.slice(0, 5)}
+                  {r.classroom && ` · ${r.classroom}`}
+                  {r.professor_name && ` · ${r.professor_name}`}
+                </div>
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => remove(r.id)} className="text-destructive">
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          ))}
+        </div>
+      </Card>
+    </div>
+  );
+}
