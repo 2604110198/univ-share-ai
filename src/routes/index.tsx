@@ -1,9 +1,8 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { SiteHeader } from "@/components/site-header";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
-import { GraduationCap, BookOpen, FileUp, Megaphone, MessageSquare, ShieldCheck } from "lucide-react";
+import { GraduationCap, BookOpen, FileUp, Megaphone, MessageSquare, ShieldCheck, Sparkles } from "lucide-react";
 import { SCHOOL_NAME, DEPARTMENT_NAME } from "@/lib/branding";
 
 export const Route = createFileRoute("/")({
@@ -17,12 +16,15 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
-  const { user, profile, loading } = useAuth();
-  const navigate = useNavigate();
+  const { user, profile } = useAuth();
 
-  useEffect(() => {
-    if (!loading && user && profile) navigate({ to: "/dashboard" });
-  }, [loading, user, profile, navigate]);
+  const greeting = profile
+    ? profile.role === "admin"
+      ? `${profile.full_name} 관리자님, 환영합니다.`
+      : profile.role === "professor"
+        ? `${profile.full_name} 교수님, 환영합니다.`
+        : `${profile.full_name}님, 환영합니다.`
+    : null;
 
   return (
     <div className="min-h-screen flex flex-col">
