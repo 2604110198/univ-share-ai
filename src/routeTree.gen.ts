@@ -10,15 +10,26 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as NoticesRouteImport } from './routes/notices'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as LibraryRouteImport } from './routes/library'
+import { Route as InquiriesRouteImport } from './routes/inquiries'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as AssignmentsRouteImport } from './routes/assignments'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as FolderFolderIdRouteImport } from './routes/folder.$folderId'
+import { Route as PostNewRouteImport } from './routes/post.new'
+import { Route as PostPostIdRouteImport } from './routes/post.$postId'
+import { Route as AssignmentsCourseIdRouteImport } from './routes/assignments.$courseId'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NoticesRoute = NoticesRouteImport.update({
+  id: '/notices',
+  path: '/notices',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -26,9 +37,24 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LibraryRoute = LibraryRouteImport.update({
+  id: '/library',
+  path: '/library',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InquiriesRoute = InquiriesRouteImport.update({
+  id: '/inquiries',
+  path: '/inquiries',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AssignmentsRoute = AssignmentsRouteImport.update({
+  id: '/assignments',
+  path: '/assignments',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -41,65 +67,122 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const FolderFolderIdRoute = FolderFolderIdRouteImport.update({
-  id: '/folder/$folderId',
-  path: '/folder/$folderId',
+const PostNewRoute = PostNewRouteImport.update({
+  id: '/post/new',
+  path: '/post/new',
   getParentRoute: () => rootRouteImport,
+} as any)
+const PostPostIdRoute = PostPostIdRouteImport.update({
+  id: '/post/$postId',
+  path: '/post/$postId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AssignmentsCourseIdRoute = AssignmentsCourseIdRouteImport.update({
+  id: '/$courseId',
+  path: '/$courseId',
+  getParentRoute: () => AssignmentsRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/assignments': typeof AssignmentsRouteWithChildren
   '/dashboard': typeof DashboardRoute
+  '/inquiries': typeof InquiriesRoute
+  '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
+  '/notices': typeof NoticesRoute
   '/signup': typeof SignupRoute
-  '/folder/$folderId': typeof FolderFolderIdRoute
+  '/assignments/$courseId': typeof AssignmentsCourseIdRoute
+  '/post/$postId': typeof PostPostIdRoute
+  '/post/new': typeof PostNewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/assignments': typeof AssignmentsRouteWithChildren
   '/dashboard': typeof DashboardRoute
+  '/inquiries': typeof InquiriesRoute
+  '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
+  '/notices': typeof NoticesRoute
   '/signup': typeof SignupRoute
-  '/folder/$folderId': typeof FolderFolderIdRoute
+  '/assignments/$courseId': typeof AssignmentsCourseIdRoute
+  '/post/$postId': typeof PostPostIdRoute
+  '/post/new': typeof PostNewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
+  '/assignments': typeof AssignmentsRouteWithChildren
   '/dashboard': typeof DashboardRoute
+  '/inquiries': typeof InquiriesRoute
+  '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
+  '/notices': typeof NoticesRoute
   '/signup': typeof SignupRoute
-  '/folder/$folderId': typeof FolderFolderIdRoute
+  '/assignments/$courseId': typeof AssignmentsCourseIdRoute
+  '/post/$postId': typeof PostPostIdRoute
+  '/post/new': typeof PostNewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/admin'
+    | '/assignments'
     | '/dashboard'
+    | '/inquiries'
+    | '/library'
     | '/login'
+    | '/notices'
     | '/signup'
-    | '/folder/$folderId'
+    | '/assignments/$courseId'
+    | '/post/$postId'
+    | '/post/new'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/admin' | '/dashboard' | '/login' | '/signup' | '/folder/$folderId'
+  to:
+    | '/'
+    | '/admin'
+    | '/assignments'
+    | '/dashboard'
+    | '/inquiries'
+    | '/library'
+    | '/login'
+    | '/notices'
+    | '/signup'
+    | '/assignments/$courseId'
+    | '/post/$postId'
+    | '/post/new'
   id:
     | '__root__'
     | '/'
     | '/admin'
+    | '/assignments'
     | '/dashboard'
+    | '/inquiries'
+    | '/library'
     | '/login'
+    | '/notices'
     | '/signup'
-    | '/folder/$folderId'
+    | '/assignments/$courseId'
+    | '/post/$postId'
+    | '/post/new'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRoute
+  AssignmentsRoute: typeof AssignmentsRouteWithChildren
   DashboardRoute: typeof DashboardRoute
+  InquiriesRoute: typeof InquiriesRoute
+  LibraryRoute: typeof LibraryRoute
   LoginRoute: typeof LoginRoute
+  NoticesRoute: typeof NoticesRoute
   SignupRoute: typeof SignupRoute
-  FolderFolderIdRoute: typeof FolderFolderIdRoute
+  PostPostIdRoute: typeof PostPostIdRoute
+  PostNewRoute: typeof PostNewRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -111,6 +194,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SignupRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/notices': {
+      id: '/notices'
+      path: '/notices'
+      fullPath: '/notices'
+      preLoaderRoute: typeof NoticesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -118,11 +208,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/library': {
+      id: '/library'
+      path: '/library'
+      fullPath: '/library'
+      preLoaderRoute: typeof LibraryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/inquiries': {
+      id: '/inquiries'
+      path: '/inquiries'
+      fullPath: '/inquiries'
+      preLoaderRoute: typeof InquiriesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard': {
       id: '/dashboard'
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/assignments': {
+      id: '/assignments'
+      path: '/assignments'
+      fullPath: '/assignments'
+      preLoaderRoute: typeof AssignmentsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -139,23 +250,54 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/folder/$folderId': {
-      id: '/folder/$folderId'
-      path: '/folder/$folderId'
-      fullPath: '/folder/$folderId'
-      preLoaderRoute: typeof FolderFolderIdRouteImport
+    '/post/new': {
+      id: '/post/new'
+      path: '/post/new'
+      fullPath: '/post/new'
+      preLoaderRoute: typeof PostNewRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/post/$postId': {
+      id: '/post/$postId'
+      path: '/post/$postId'
+      fullPath: '/post/$postId'
+      preLoaderRoute: typeof PostPostIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/assignments/$courseId': {
+      id: '/assignments/$courseId'
+      path: '/$courseId'
+      fullPath: '/assignments/$courseId'
+      preLoaderRoute: typeof AssignmentsCourseIdRouteImport
+      parentRoute: typeof AssignmentsRoute
     }
   }
 }
 
+interface AssignmentsRouteChildren {
+  AssignmentsCourseIdRoute: typeof AssignmentsCourseIdRoute
+}
+
+const AssignmentsRouteChildren: AssignmentsRouteChildren = {
+  AssignmentsCourseIdRoute: AssignmentsCourseIdRoute,
+}
+
+const AssignmentsRouteWithChildren = AssignmentsRoute._addFileChildren(
+  AssignmentsRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
+  AssignmentsRoute: AssignmentsRouteWithChildren,
   DashboardRoute: DashboardRoute,
+  InquiriesRoute: InquiriesRoute,
+  LibraryRoute: LibraryRoute,
   LoginRoute: LoginRoute,
+  NoticesRoute: NoticesRoute,
   SignupRoute: SignupRoute,
-  FolderFolderIdRoute: FolderFolderIdRoute,
+  PostPostIdRoute: PostPostIdRoute,
+  PostNewRoute: PostNewRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

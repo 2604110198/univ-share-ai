@@ -9,7 +9,9 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Trash2, UserCog, GraduationCap, Users, Settings } from "lucide-react";
+import { Trash2, UserCog, GraduationCap, Users, Settings, BookOpen } from "lucide-react";
+import { WEEKDAY_LABEL, WEEKDAY_ORDER } from "@/lib/format";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ROLE_LABEL, formatDate } from "@/lib/format";
 import { validatePassword } from "@/lib/credentials";
 
@@ -52,21 +54,15 @@ function AdminPage() {
             <TabsTrigger value="settings"><Settings className="h-4 w-4 mr-1.5" />관리자 설정</TabsTrigger>
             <TabsTrigger value="students"><GraduationCap className="h-4 w-4 mr-1.5" />허용 학번</TabsTrigger>
             <TabsTrigger value="professors"><UserCog className="h-4 w-4 mr-1.5" />허용 교수</TabsTrigger>
+            <TabsTrigger value="courses"><BookOpen className="h-4 w-4 mr-1.5" />강의 관리</TabsTrigger>
             <TabsTrigger value="users"><Users className="h-4 w-4 mr-1.5" />가입 사용자</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="settings" className="mt-6">
-            <AdminSettingsPanel />
-          </TabsContent>
-          <TabsContent value="students" className="mt-6">
-            <AllowedStudentsPanel />
-          </TabsContent>
-          <TabsContent value="professors" className="mt-6">
-            <AllowedProfessorsPanel />
-          </TabsContent>
-          <TabsContent value="users" className="mt-6">
-            <UsersPanel />
-          </TabsContent>
+          <TabsContent value="settings" className="mt-6"><AdminSettingsPanel /></TabsContent>
+          <TabsContent value="students" className="mt-6"><AllowedStudentsPanel /></TabsContent>
+          <TabsContent value="professors" className="mt-6"><AllowedProfessorsPanel /></TabsContent>
+          <TabsContent value="courses" className="mt-6"><CoursesPanel /></TabsContent>
+          <TabsContent value="users" className="mt-6"><UsersPanel /></TabsContent>
         </Tabs>
       </main>
     </div>
@@ -359,6 +355,116 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
     <div className="rounded-lg border border-border bg-card p-4 shadow-paper">
       <h3 className="font-serif font-bold text-base mb-4 px-1">{title}</h3>
       <div>{children}</div>
+    </div>
+  );
+}
+
+interface CourseRow {
+  id: string; name: string; weekday: string;
+  start_time: string; end_time: string; classroom: string | null;
+  professor_id: string | null; professor_name: string | null;
+}
+
+function CoursesPanel() {
+  const [rows, setRows] = useState<CourseRow[]>([]);
+  const [profs, setProfs] = useState<{ id: string; full_name: string }[]>([]);
+  const [name, setName] = useState("");
+  const [weekday, setWeekday] = useState<string>("mon");
+  const [startTime, setStartTime] = useState("09:00");
+  const [endTime, setEndTime] = useState("10:30");
+  const [classroom, setClassroom] = useState("");
+  const [profId, setProfId] = useState("");
+
+  const load = useCallback(async () => {
+    const { data } = await supabase.from("courses").select("*").order("weekday").order("start_time");
+    setRows((data ?? []) as CourseRow[]);
+    const { data: ps } = await supabase.from("profiles").select("id, full_name").eq("role", "professor");
+    setProfs((ps ?? []) as { id: string; full_name: string }[]);
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  const add = async () => {
+    if (!name.trim()) { toast.error("강의명을 입력하세요"); return; }
+    const prof = profs.find((p) => p.id === profId);
+    const { error } = await supabase.from("courses").insert({
+      name: name.trim(),
+      weekday: weekday as "mon" | "tue" | "wed" | "thu" | "fri",
+      start_time: startTime,
+      end_time: endTime,
+      classroom: classroom.trim() || null,
+      professor_id: profId || null,
+      professor_name: prof?.full_name ?? null,
+    });
+    if (error) { toast.error("등록 실패", { description: error.message }); return; }
+    toast.success("강의가 등록되었습니다");
+    setName(""); setClassroom(""); setProfId("");
+    load();
+  };
+
+  const remove = async (id: string) => {
+    if (!confirm("정말 삭제하시겠습니까?")) return;
+    const { error } = await supabase.from("courses").delete().eq("id", id);
+    if (error) { toast.error("삭제 실패", { description: error.message }); return; }
+    load();
+  };
+
+  return (
+    <div className="grid lg:grid-cols-2 gap-6">
+      <Card title="강의 등록">
+        <div className="space-y-3">
+          <div className="space-y-2"><Label>강의명</Label><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="예: 반도체공정실습" /></div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label>요일</Label>
+              <Select value={weekday} onValueChange={setWeekday}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {WEEKDAY_ORDER.map((d) => <SelectItem key={d} value={d}>{WEEKDAY_LABEL[d]}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>강의실</Label>
+              <Input value={classroom} onChange={(e) => setClassroom(e.target.value)} placeholder="예: 301호" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2"><Label>시작 시간</Label><Input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} /></div>
+            <div className="space-y-2"><Label>종료 시간</Label><Input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} /></div>
+          </div>
+          <div className="space-y-2">
+            <Label>담당 교수</Label>
+            <Select value={profId} onValueChange={setProfId}>
+              <SelectTrigger><SelectValue placeholder="가입한 교수 중 선택 (선택사항)" /></SelectTrigger>
+              <SelectContent>
+                {profs.map((p) => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button onClick={add} className="w-full">등록</Button>
+        </div>
+      </Card>
+
+      <Card title={`등록된 강의 (${rows.length})`}>
+        <div className="max-h-[600px] overflow-auto divide-y divide-border -m-4">
+          {rows.length === 0 && <div className="p-6 text-center text-sm text-muted-foreground">등록된 강의가 없습니다.</div>}
+          {rows.map((r) => (
+            <div key={r.id} className="flex items-center justify-between p-3 hover:bg-secondary/40">
+              <div>
+                <div className="font-medium">{r.name}</div>
+                <div className="text-xs text-muted-foreground">
+                  {WEEKDAY_LABEL[r.weekday]} {r.start_time.slice(0, 5)}~{r.end_time.slice(0, 5)}
+                  {r.classroom && ` · ${r.classroom}`}
+                  {r.professor_name && ` · ${r.professor_name}`}
+                </div>
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => remove(r.id)} className="text-destructive">
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          ))}
+        </div>
+      </Card>
     </div>
   );
 }
