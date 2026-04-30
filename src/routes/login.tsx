@@ -25,7 +25,7 @@ function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!loading && user) navigate({ to: "/dashboard" });
+    if (!loading && user) navigate({ to: "/" });
   }, [loading, user, navigate]);
 
   const onSubmit = async (e: React.FormEvent) => {
@@ -43,7 +43,7 @@ function LoginPage() {
       });
     } else {
       toast.success("환영합니다");
-      navigate({ to: "/dashboard" });
+      navigate({ to: "/" });
     }
   };
 

@@ -29,8 +29,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const loadProfile = async (uid: string) => {
-    const { data } = await supabase.from("profiles").select("*").eq("id", uid).maybeSingle();
+  const loadProfile = async (uid: string, attempt = 0): Promise<void> => {
+    const { data, error } = await supabase.from("profiles").select("*").eq("id", uid).maybeSingle();
+    if (error) {
+      // Backend can return 503 right after login while warming up — retry a few times
+      if (attempt < 5) {
+        await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
+        return loadProfile(uid, attempt + 1);
+      }
+      console.error("Failed to load profile:", error);
+      setProfile(null);
+      return;
+    }
     setProfile((data as Profile | null) ?? null);
   };
 

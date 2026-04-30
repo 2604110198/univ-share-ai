@@ -41,9 +41,10 @@ function DashboardPage() {
     })();
   }, [user]);
 
-  if (loading || !profile) {
+  if (loading) {
     return <div className="min-h-screen grid place-items-center text-muted-foreground">불러오는 중...</div>;
   }
+  if (!user) return null;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -52,7 +53,7 @@ function DashboardPage() {
         <PageHeader
           icon={BookOpen}
           title="강의실"
-          description={`${profile.full_name}님, 이번 학기 시간표입니다.`}
+          description={`${profile?.full_name ?? ""}님, 이번 학기 시간표입니다.`}
         />
 
         {loadingCourses ? (
@@ -60,7 +61,7 @@ function DashboardPage() {
         ) : courses.length === 0 ? (
           <div className="rounded-lg border border-dashed border-border p-16 text-center text-muted-foreground">
             등록된 강의가 없습니다.
-            {profile.role === "admin" && <div className="mt-2 text-sm">디스크 관리에서 강의를 등록할 수 있습니다.</div>}
+            {profile?.role === "admin" && <div className="mt-2 text-sm">디스크 관리에서 강의를 등록할 수 있습니다.</div>}
           </div>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-5 gap-4">
