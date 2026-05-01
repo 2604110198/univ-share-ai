@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SignupRouteImport } from './routes/signup'
+import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as NoticesRouteImport } from './routes/notices'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LibraryRouteImport } from './routes/library'
@@ -20,11 +21,17 @@ import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as PostNewRouteImport } from './routes/post.new'
 import { Route as PostPostIdRouteImport } from './routes/post.$postId'
+import { Route as InquiriesThreadIdRouteImport } from './routes/inquiries.$threadId'
 import { Route as AssignmentsCourseIdRouteImport } from './routes/assignments.$courseId'
 
 const SignupRoute = SignupRouteImport.update({
   id: '/signup',
   path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NoticesRoute = NoticesRouteImport.update({
@@ -77,6 +84,11 @@ const PostPostIdRoute = PostPostIdRouteImport.update({
   path: '/post/$postId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const InquiriesThreadIdRoute = InquiriesThreadIdRouteImport.update({
+  id: '/$threadId',
+  path: '/$threadId',
+  getParentRoute: () => InquiriesRoute,
+} as any)
 const AssignmentsCourseIdRoute = AssignmentsCourseIdRouteImport.update({
   id: '/$courseId',
   path: '/$courseId',
@@ -88,12 +100,14 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/assignments': typeof AssignmentsRouteWithChildren
   '/dashboard': typeof DashboardRoute
-  '/inquiries': typeof InquiriesRoute
+  '/inquiries': typeof InquiriesRouteWithChildren
   '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
   '/notices': typeof NoticesRoute
+  '/profile': typeof ProfileRoute
   '/signup': typeof SignupRoute
   '/assignments/$courseId': typeof AssignmentsCourseIdRoute
+  '/inquiries/$threadId': typeof InquiriesThreadIdRoute
   '/post/$postId': typeof PostPostIdRoute
   '/post/new': typeof PostNewRoute
 }
@@ -102,12 +116,14 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/assignments': typeof AssignmentsRouteWithChildren
   '/dashboard': typeof DashboardRoute
-  '/inquiries': typeof InquiriesRoute
+  '/inquiries': typeof InquiriesRouteWithChildren
   '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
   '/notices': typeof NoticesRoute
+  '/profile': typeof ProfileRoute
   '/signup': typeof SignupRoute
   '/assignments/$courseId': typeof AssignmentsCourseIdRoute
+  '/inquiries/$threadId': typeof InquiriesThreadIdRoute
   '/post/$postId': typeof PostPostIdRoute
   '/post/new': typeof PostNewRoute
 }
@@ -117,12 +133,14 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/assignments': typeof AssignmentsRouteWithChildren
   '/dashboard': typeof DashboardRoute
-  '/inquiries': typeof InquiriesRoute
+  '/inquiries': typeof InquiriesRouteWithChildren
   '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
   '/notices': typeof NoticesRoute
+  '/profile': typeof ProfileRoute
   '/signup': typeof SignupRoute
   '/assignments/$courseId': typeof AssignmentsCourseIdRoute
+  '/inquiries/$threadId': typeof InquiriesThreadIdRoute
   '/post/$postId': typeof PostPostIdRoute
   '/post/new': typeof PostNewRoute
 }
@@ -137,8 +155,10 @@ export interface FileRouteTypes {
     | '/library'
     | '/login'
     | '/notices'
+    | '/profile'
     | '/signup'
     | '/assignments/$courseId'
+    | '/inquiries/$threadId'
     | '/post/$postId'
     | '/post/new'
   fileRoutesByTo: FileRoutesByTo
@@ -151,8 +171,10 @@ export interface FileRouteTypes {
     | '/library'
     | '/login'
     | '/notices'
+    | '/profile'
     | '/signup'
     | '/assignments/$courseId'
+    | '/inquiries/$threadId'
     | '/post/$postId'
     | '/post/new'
   id:
@@ -165,8 +187,10 @@ export interface FileRouteTypes {
     | '/library'
     | '/login'
     | '/notices'
+    | '/profile'
     | '/signup'
     | '/assignments/$courseId'
+    | '/inquiries/$threadId'
     | '/post/$postId'
     | '/post/new'
   fileRoutesById: FileRoutesById
@@ -176,10 +200,11 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   AssignmentsRoute: typeof AssignmentsRouteWithChildren
   DashboardRoute: typeof DashboardRoute
-  InquiriesRoute: typeof InquiriesRoute
+  InquiriesRoute: typeof InquiriesRouteWithChildren
   LibraryRoute: typeof LibraryRoute
   LoginRoute: typeof LoginRoute
   NoticesRoute: typeof NoticesRoute
+  ProfileRoute: typeof ProfileRoute
   SignupRoute: typeof SignupRoute
   PostPostIdRoute: typeof PostPostIdRoute
   PostNewRoute: typeof PostNewRoute
@@ -192,6 +217,13 @@ declare module '@tanstack/react-router' {
       path: '/signup'
       fullPath: '/signup'
       preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/notices': {
@@ -264,6 +296,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PostPostIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/inquiries/$threadId': {
+      id: '/inquiries/$threadId'
+      path: '/$threadId'
+      fullPath: '/inquiries/$threadId'
+      preLoaderRoute: typeof InquiriesThreadIdRouteImport
+      parentRoute: typeof InquiriesRoute
+    }
     '/assignments/$courseId': {
       id: '/assignments/$courseId'
       path: '/$courseId'
@@ -286,15 +325,28 @@ const AssignmentsRouteWithChildren = AssignmentsRoute._addFileChildren(
   AssignmentsRouteChildren,
 )
 
+interface InquiriesRouteChildren {
+  InquiriesThreadIdRoute: typeof InquiriesThreadIdRoute
+}
+
+const InquiriesRouteChildren: InquiriesRouteChildren = {
+  InquiriesThreadIdRoute: InquiriesThreadIdRoute,
+}
+
+const InquiriesRouteWithChildren = InquiriesRoute._addFileChildren(
+  InquiriesRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
   AssignmentsRoute: AssignmentsRouteWithChildren,
   DashboardRoute: DashboardRoute,
-  InquiriesRoute: InquiriesRoute,
+  InquiriesRoute: InquiriesRouteWithChildren,
   LibraryRoute: LibraryRoute,
   LoginRoute: LoginRoute,
   NoticesRoute: NoticesRoute,
+  ProfileRoute: ProfileRoute,
   SignupRoute: SignupRoute,
   PostPostIdRoute: PostPostIdRoute,
   PostNewRoute: PostNewRoute,
