@@ -58,9 +58,10 @@ function LibraryPage() {
     );
   }, [rows, q]);
 
-  if (loading || !profile) return <div className="min-h-screen grid place-items-center text-muted-foreground">불러오는 중...</div>;
+  if (loading) return <div className="min-h-screen grid place-items-center text-muted-foreground">불러오는 중...</div>;
+  if (!user) return null;
 
-  const canWrite = profile.role === "professor" || profile.role === "admin";
+  const canWrite = profile?.role === "professor" || profile?.role === "admin";
 
   return (
     <div className="min-h-screen flex flex-col">

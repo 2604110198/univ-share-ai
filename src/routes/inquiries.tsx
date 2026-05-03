@@ -130,7 +130,8 @@ function InquiriesPage() {
     load();
   };
 
-  if (loading || !profile) return <div className="min-h-screen grid place-items-center text-muted-foreground">불러오는 중...</div>;
+  if (loading) return <div className="min-h-screen grid place-items-center text-muted-foreground">불러오는 중...</div>;
+  if (!user) return null;
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -154,7 +155,7 @@ function InquiriesPage() {
                     <Label>제목</Label>
                     <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="문의 제목" />
                   </div>
-                  {profile.role !== "professor" && (
+                  {profile?.role !== "professor" && (
                     <div className="space-y-2">
                       <Label>문의 대상 교수</Label>
                       <Select value={target} onValueChange={setTarget}>

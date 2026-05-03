@@ -33,6 +33,7 @@ function ProfilePage() {
   if (loading || !profile) {
     return <div className="min-h-screen grid place-items-center text-muted-foreground">불러오는 중...</div>;
   }
+  if (!user) return null;
 
   const saveName = async () => {
     if (!name.trim()) { toast.error("이름을 입력하세요"); return; }
