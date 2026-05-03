@@ -155,7 +155,7 @@ function InquiriesPage() {
                     <Label>제목</Label>
                     <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="문의 제목" />
                   </div>
-                  {profile.role !== "professor" && (
+                  {profile?.role !== "professor" && (
                     <div className="space-y-2">
                       <Label>문의 대상 교수</Label>
                       <Select value={target} onValueChange={setTarget}>
