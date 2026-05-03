@@ -102,7 +102,7 @@ function InquiryThreadPage() {
     navigate({ to: "/inquiries" });
   };
 
-  if (loading || !profile || busy || !thread) {
+  if (loading || busy || !thread) {
     return (
       <div className="min-h-screen flex flex-col">
         <SiteHeader />
@@ -110,6 +110,7 @@ function InquiryThreadPage() {
       </div>
     );
   }
+  if (!user || !profile) return null;
 
   const isAdmin = profile.role === "admin";
   const canDelete = isAdmin || thread.author_id === user!.id;

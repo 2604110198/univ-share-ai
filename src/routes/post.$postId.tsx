@@ -105,7 +105,7 @@ function PostPage() {
     navigate({ to: "/dashboard" });
   };
 
-  if (loading || !profile || busy || !post) {
+  if (loading || busy || !post) {
     return (
       <div className="min-h-screen flex flex-col">
         <SiteHeader />
@@ -113,6 +113,7 @@ function PostPage() {
       </div>
     );
   }
+  if (!user || !profile) return null;
 
   const isOwner = post.author_id === user!.id;
   const isAdmin = profile.role === "admin";

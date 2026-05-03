@@ -40,10 +40,11 @@ function CourseAssignmentsPage() {
     })();
   }, [user, courseId]);
 
-  if (loading || !profile) return <div className="min-h-screen grid place-items-center text-muted-foreground">불러오는 중...</div>;
+  if (loading) return <div className="min-h-screen grid place-items-center text-muted-foreground">불러오는 중...</div>;
+  if (!user) return null;
 
-  const canWriteAssignment = profile.role === "admin" ||
-    (profile.role === "professor" && course?.professor_id === profile.id);
+  const canWriteAssignment = profile?.role === "admin" ||
+    (profile?.role === "professor" && course?.professor_id === profile.id);
 
   return (
     <div className="min-h-screen flex flex-col">
