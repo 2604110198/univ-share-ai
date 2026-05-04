@@ -31,8 +31,8 @@ function SignupPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!loading && user) navigate({ to: "/" });
-  }, [loading, user, navigate]);
+    if (!loading && user && !submitting) navigate({ to: "/" });
+  }, [loading, user, submitting, navigate]);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,9 +74,9 @@ function SignupPage() {
         },
       },
     });
-    setSubmitting(false);
 
     if (error) {
+      setSubmitting(false);
       const msg = error.message.includes("등록되지 않은") || error.message.includes("관리자 계정은")
         ? error.message
         : error.message.toLowerCase().includes("already")
@@ -88,6 +88,7 @@ function SignupPage() {
       return;
     }
     await supabase.auth.signOut();
+    setSubmitting(false);
     toast.success("가입이 완료되었습니다", { description: "이제 로그인할 수 있습니다." });
     navigate({ to: "/login" });
   };
