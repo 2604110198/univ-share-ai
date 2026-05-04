@@ -87,6 +87,7 @@ function SignupPage() {
       toast.error("회원가입 실패", { description: msg });
       return;
     }
+    await supabase.auth.signOut();
     toast.success("가입이 완료되었습니다", { description: "이제 로그인할 수 있습니다." });
     navigate({ to: "/login" });
   };
