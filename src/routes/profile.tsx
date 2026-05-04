@@ -21,6 +21,7 @@ function ProfilePage() {
   const { user, profile, loading, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [name, setName] = useState("");
+  const [namePw, setNamePw] = useState("");
   const [savingName, setSavingName] = useState(false);
   const [currentPw, setCurrentPw] = useState("");
   const [newPw, setNewPw] = useState("");
@@ -37,11 +38,18 @@ function ProfilePage() {
 
   const saveName = async () => {
     if (!name.trim()) { toast.error("이름을 입력하세요"); return; }
+    if (!namePw) { toast.error("비밀번호를 입력하세요"); return; }
     setSavingName(true);
+    const { error: signInErr } = await supabase.auth.signInWithPassword({
+      email: profile.email,
+      password: namePw,
+    });
+    if (signInErr) { setSavingName(false); toast.error("비밀번호가 올바르지 않습니다"); return; }
     const { error } = await supabase.from("profiles").update({ full_name: name.trim() }).eq("id", user.id);
     setSavingName(false);
     if (error) { toast.error("저장 실패", { description: error.message }); return; }
     toast.success("이름이 변경되었습니다");
+    setNamePw("");
     await refreshProfile();
   };
 
@@ -88,6 +96,10 @@ function ProfilePage() {
               <div className="space-y-2">
                 <Label>이름</Label>
                 <Input value={name} onChange={(e) => setName(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>비밀번호 확인</Label>
+                <Input type="password" value={namePw} onChange={(e) => setNamePw(e.target.value)} />
               </div>
               <Button onClick={saveName} disabled={savingName} className="w-full">
                 {savingName ? "저장 중..." : "이름 변경"}
