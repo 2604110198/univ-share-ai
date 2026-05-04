@@ -88,7 +88,7 @@ function LoginPage() {
               <TabsContent value="student" className="space-y-4 mt-0">
                 <div className="space-y-2">
                   <Label htmlFor="sid">학번</Label>
-                  <Input id="sid" required value={studentId} onChange={(e) => setStudentId(e.target.value)} placeholder="예: 20241234 (관리자: 0000)" />
+                  <Input id="sid" required value={studentId} onChange={(e) => setStudentId(e.target.value)} placeholder="예: 20241234" />
                 </div>
               </TabsContent>
               <TabsContent value="professor" className="space-y-4 mt-0">
