@@ -83,8 +83,9 @@ function AdminSettingsPanel() {
 
   const saveName = async () => {
     if (!name.trim()) { toast.error("이름을 입력하세요"); return; }
+    if (!profile) return;
     setSavingName(true);
-    const { error } = await supabase.rpc("update_my_profile", { _full_name: name.trim() });
+    const { error } = await supabase.from("profiles").update({ full_name: name.trim() }).eq("id", profile.id);
     setSavingName(false);
     if (error) { toast.error("저장 실패", { description: error.message }); return; }
     toast.success("관리자 이름이 변경되었습니다");

@@ -5,6 +5,7 @@ import { ROLE_LABEL } from "@/lib/format";
 import { SCHOOL_NAME, DEPARTMENT_NAME } from "@/lib/branding";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,6 +34,7 @@ const NAV = [
   { to: "/assignments", label: "과제 제출", icon: FileUp },
   { to: "/notices", label: "공지사항", icon: Megaphone },
   { to: "/inquiries", label: "1:1 문의", icon: MessageSquare },
+  { to: "/admin", label: "관리실", icon: Settings, adminOnly: true },
 ] as const;
 
 export function SiteHeader() {
@@ -66,6 +68,11 @@ export function SiteHeader() {
   useEffect(() => { loadUnread(); }, [loadUnread, pathname]);
 
   const handleNavClick = (e: React.MouseEvent, to: string) => {
+    if (to === "/admin" && profile?.role !== "admin") {
+      e.preventDefault();
+      toast.error("접근 권한이 없습니다");
+      return;
+    }
     if (!user) {
       e.preventDefault();
       navigate({ to: "/login" });
@@ -84,12 +91,14 @@ export function SiteHeader() {
     <header className="border-b border-border bg-card sticky top-0 z-30 shadow-paper">
       {/* Top utility strip */}
       <div className="border-b border-border/60 bg-primary text-primary-foreground">
-        <div className="mx-auto max-w-7xl px-6 h-9 flex items-center justify-between text-[11px]">
-          <span className="tracking-wider">{SCHOOL_NAME}</span>
+        <div className="mx-auto max-w-7xl px-6 min-h-12 py-2 flex items-center justify-between gap-4 text-xs">
+          <span className="font-serif text-base md:text-lg font-bold tracking-wide leading-tight">{SCHOOL_NAME}</span>
           <div className="flex items-center gap-3 opacity-90">
             {user && profile ? (
               <>
-                <span>{ROLE_LABEL[profile.role]}</span>
+                <span className="hidden sm:inline">{greeting}</span>
+                <span className="opacity-60">|</span>
+                <Link to="/profile" className="hover:underline">개인정보 수정</Link>
                 <span className="opacity-60">|</span>
                 <button onClick={() => signOut()} className="hover:underline inline-flex items-center gap-1">
                   <LogOut className="h-3 w-3" /> 로그아웃
@@ -126,10 +135,6 @@ export function SiteHeader() {
         <div className="flex items-center gap-2 shrink-0">
           {user && profile ? (
             <>
-              <span className="hidden md:inline text-xs text-muted-foreground mr-1">
-                {greeting}
-              </span>
-
               <Link
                 to="/inquiries"
                 className="relative inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-secondary text-muted-foreground hover:text-primary transition-colors"
@@ -186,9 +191,7 @@ export function SiteHeader() {
               </DropdownMenu>
             </>
           ) : (
-            <Link to="/login">
-              <Button>로그인</Button>
-            </Link>
+            <div className="hidden md:block text-xs text-muted-foreground">로그인이 필요합니다.</div>
           )}
         </div>
       </div>
@@ -215,20 +218,6 @@ export function SiteHeader() {
               </Link>
             );
           })}
-          {profile?.role === "admin" && (
-            <Link
-              to="/admin"
-              className={cn(
-                "inline-flex items-center gap-1.5 px-4 h-11 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ml-auto",
-                pathname.startsWith("/admin")
-                  ? "border-accent text-primary"
-                  : "border-transparent text-muted-foreground hover:text-primary hover:border-border",
-              )}
-            >
-              <Settings className="h-4 w-4" />
-              관리실
-            </Link>
-          )}
         </div>
       </nav>
     </header>

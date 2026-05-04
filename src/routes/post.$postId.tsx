@@ -69,7 +69,7 @@ function PostPage() {
   useEffect(() => {
     if (!user) return;
     setBusy(true);
-    supabase.rpc("increment_post_view", { _post_id: postId }).then(() => load());
+    load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, postId]);
 

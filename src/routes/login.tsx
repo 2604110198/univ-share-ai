@@ -16,7 +16,7 @@ export const Route = createFileRoute("/login")({
 });
 
 function LoginPage() {
-  const { user, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState<"student" | "professor">("student");
   const [studentId, setStudentId] = useState("");
@@ -25,8 +25,8 @@ function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!loading && user) navigate({ to: "/" });
-  }, [loading, user, navigate]);
+    if (!loading && user && profile) navigate({ to: "/" });
+  }, [loading, user, profile, navigate]);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,7 +88,7 @@ function LoginPage() {
               <TabsContent value="student" className="space-y-4 mt-0">
                 <div className="space-y-2">
                   <Label htmlFor="sid">학번</Label>
-                  <Input id="sid" required value={studentId} onChange={(e) => setStudentId(e.target.value)} placeholder="예: 20241234 (관리자: 0000)" />
+                  <Input id="sid" required value={studentId} onChange={(e) => setStudentId(e.target.value)} placeholder="예: 20241234" />
                 </div>
               </TabsContent>
               <TabsContent value="professor" className="space-y-4 mt-0">
