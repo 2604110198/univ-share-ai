@@ -31,7 +31,7 @@ function SignupPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!loading && user) navigate({ to: "/dashboard" });
+    if (!loading && user) navigate({ to: "/" });
   }, [loading, user, navigate]);
 
   const onSubmit = async (e: React.FormEvent) => {
@@ -67,7 +67,7 @@ function SignupPage() {
       email: signupEmail,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/dashboard`,
+        emailRedirectTo: `${window.location.origin}/login`,
         data: {
           signup_role: signupRole,
           student_id: role === "student" ? studentId.trim() : null,
