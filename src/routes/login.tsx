@@ -16,7 +16,7 @@ export const Route = createFileRoute("/login")({
 });
 
 function LoginPage() {
-  const { user, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState<"student" | "professor">("student");
   const [studentId, setStudentId] = useState("");
@@ -25,8 +25,8 @@ function LoginPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (!loading && user) navigate({ to: "/" });
-  }, [loading, user, navigate]);
+    if (!loading && user && profile) navigate({ to: "/" });
+  }, [loading, user, profile, navigate]);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
