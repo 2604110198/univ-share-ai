@@ -267,6 +267,27 @@ export type Database = {
         }
         Relationships: []
       }
+      site_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: string | null
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: string | null
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -310,6 +331,7 @@ export type Database = {
         | "notice"
         | "inquiry"
         | "submission"
+        | "gallery"
       weekday: "mon" | "tue" | "wed" | "thu" | "fri"
     }
     CompositeTypes: {
@@ -445,6 +467,7 @@ export const Constants = {
         "notice",
         "inquiry",
         "submission",
+        "gallery",
       ],
       weekday: ["mon", "tue", "wed", "thu", "fri"],
     },
