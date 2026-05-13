@@ -12,12 +12,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { ArrowLeft, Paperclip, FileEdit } from "lucide-react";
-import { uploadAttachments } from "@/lib/attachments";
+import { uploadAttachments, uploadGalleryImages } from "@/lib/attachments";
 import type { Database } from "@/integrations/supabase/types";
 
-type CategoryParam = "material" | "assignment" | "notice" | "inquiry";
+type CategoryParam = "material" | "assignment" | "notice" | "inquiry" | "gallery";
 const CATEGORY_LABEL: Record<CategoryParam, string> = {
-  material: "자료실 글", assignment: "과제 공지", notice: "공지사항", inquiry: "1:1 문의",
+  material: "자료실 글", assignment: "과제 공지", notice: "공지사항", inquiry: "1:1 문의", gallery: "이미지 게시글",
 };
 
 interface Search { category?: CategoryParam; courseId?: string }
@@ -79,6 +79,7 @@ function NewPostPage() {
     (category === "material" && profile.role === "professor") ||
     (category === "notice" && profile.role === "professor") ||
     (category === "assignment" && profile.role === "professor") ||
+    (category === "gallery" && profile.role === "professor") ||
     category === "inquiry";
 
   if (!canPost) {
@@ -97,6 +98,7 @@ function NewPostPage() {
     if (!title.trim()) { toast.error("제목을 입력하세요"); return; }
     if (category === "assignment" && !courseId) { toast.error("강의를 선택하세요"); return; }
     if (category === "inquiry" && !targetProf) { toast.error("문의 대상 교수를 선택하세요"); return; }
+    if (category === "gallery" && files.length === 0) { toast.error("이미지를 1개 이상 첨부하세요"); return; }
     setSubmitting(true);
 
     type Insert = Database["public"]["Tables"]["posts"]["Insert"];
@@ -116,12 +118,18 @@ function NewPostPage() {
       return;
     }
     if (files.length) {
-      const errs = await uploadAttachments({ postId: created.id, files, uploaderId: user.id });
+      const errs = category === "gallery"
+        ? await uploadGalleryImages({ postId: created.id, files, uploaderId: user.id })
+        : await uploadAttachments({ postId: created.id, files, uploaderId: user.id });
       if (errs.length) toast.error("일부 파일 업로드 실패", { description: errs.join("\n") });
     }
     setSubmitting(false);
     toast.success("글이 등록되었습니다");
-    navigate({ to: "/post/$postId", params: { postId: created.id } });
+    if (category === "gallery") {
+      navigate({ to: "/gallery" });
+    } else {
+      navigate({ to: "/post/$postId", params: { postId: created.id } });
+    }
   };
 
   return (
@@ -131,7 +139,7 @@ function NewPostPage() {
         <Link to="/dashboard" className="text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-1 mb-3">
           <ArrowLeft className="h-3 w-3" /> 돌아가기
         </Link>
-        <PageHeader icon={FileEdit} title={`${CATEGORY_LABEL[category]} 작성`} />
+        <PageHeader icon={FileEdit} title={`${CATEGORY_LABEL[category as CategoryParam]} 작성`} />
 
         <div className="space-y-5 rounded-lg border border-border bg-card p-6">
           <div className="space-y-2">

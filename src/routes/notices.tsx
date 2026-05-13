@@ -47,6 +47,14 @@ function NoticesPage() {
   if (loading) return <div className="min-h-screen grid place-items-center text-muted-foreground">불러오는 중...</div>;
   if (!user) return null;
   const canWrite = profile?.role === "professor" || profile?.role === "admin";
+  const isAdmin = profile?.role === "admin";
+
+  const togglePin = async (id: string, next: boolean) => {
+    const { error } = await supabase.from("posts").update({ is_pinned: next }).eq("id", id);
+    if (error) return;
+    setPosts((prev) => prev.map((p) => (p.id === id ? { ...p, is_pinned: next } : p)));
+    setPage(1);
+  };
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -66,7 +74,12 @@ function NoticesPage() {
           <div className="text-center text-muted-foreground py-12">불러오는 중...</div>
         ) : (
           <>
-            <PostTable posts={visible} showCourse={false} emptyText="등록된 공지가 없습니다." />
+            <PostTable
+              posts={visible}
+              showCourse={false}
+              emptyText="등록된 공지가 없습니다."
+              onTogglePin={isAdmin ? togglePin : undefined}
+            />
             {totalPages > 1 && (
               <div className="mt-6 flex items-center justify-center gap-1">
                 <Button variant="ghost" size="sm" disabled={page === 1} onClick={() => setPage((p) => p - 1)}>

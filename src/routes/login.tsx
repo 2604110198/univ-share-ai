@@ -80,7 +80,7 @@ function LoginPage() {
 
           <Tabs value={tab} onValueChange={(v) => setTab(v as "student" | "professor")}>
             <TabsList className="grid grid-cols-2 w-full">
-              <TabsTrigger value="student">학생 / 관리자</TabsTrigger>
+              <TabsTrigger value="student">학생</TabsTrigger>
               <TabsTrigger value="professor">교수</TabsTrigger>
             </TabsList>
 
@@ -108,7 +108,13 @@ function LoginPage() {
             </form>
           </Tabs>
 
-          <p className="mt-6 text-sm text-muted-foreground text-center">
+          <p className="mt-4 text-sm text-center">
+            <Link to="/forgot-password" className="text-muted-foreground hover:text-primary">
+              비밀번호를 잊으셨나요?
+            </Link>
+          </p>
+
+          <p className="mt-2 text-sm text-muted-foreground text-center">
             계정이 없으신가요?{" "}
             <Link to="/signup" className="text-primary font-medium hover:text-accent">
               회원가입
