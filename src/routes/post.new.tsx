@@ -12,12 +12,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { ArrowLeft, Paperclip, FileEdit } from "lucide-react";
-import { uploadAttachments } from "@/lib/attachments";
+import { uploadAttachments, uploadGalleryImages } from "@/lib/attachments";
 import type { Database } from "@/integrations/supabase/types";
 
-type CategoryParam = "material" | "assignment" | "notice" | "inquiry";
+type CategoryParam = "material" | "assignment" | "notice" | "inquiry" | "gallery";
 const CATEGORY_LABEL: Record<CategoryParam, string> = {
-  material: "자료실 글", assignment: "과제 공지", notice: "공지사항", inquiry: "1:1 문의",
+  material: "자료실 글", assignment: "과제 공지", notice: "공지사항", inquiry: "1:1 문의", gallery: "이미지 게시글",
 };
 
 interface Search { category?: CategoryParam; courseId?: string }
