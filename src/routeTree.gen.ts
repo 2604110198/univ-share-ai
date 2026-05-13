@@ -15,6 +15,7 @@ import { Route as NoticesRouteImport } from './routes/notices'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LibraryRouteImport } from './routes/library'
 import { Route as InquiriesRouteImport } from './routes/inquiries'
+import { Route as GalleryRouteImport } from './routes/gallery'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AssignmentsRouteImport } from './routes/assignments'
@@ -53,6 +54,11 @@ const LibraryRoute = LibraryRouteImport.update({
 const InquiriesRoute = InquiriesRouteImport.update({
   id: '/inquiries',
   path: '/inquiries',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GalleryRoute = GalleryRouteImport.update({
+  id: '/gallery',
+  path: '/gallery',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
@@ -107,6 +113,7 @@ export interface FileRoutesByFullPath {
   '/assignments': typeof AssignmentsRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/gallery': typeof GalleryRoute
   '/inquiries': typeof InquiriesRouteWithChildren
   '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
@@ -124,6 +131,7 @@ export interface FileRoutesByTo {
   '/assignments': typeof AssignmentsRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/gallery': typeof GalleryRoute
   '/inquiries': typeof InquiriesRouteWithChildren
   '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
@@ -142,6 +150,7 @@ export interface FileRoutesById {
   '/assignments': typeof AssignmentsRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/gallery': typeof GalleryRoute
   '/inquiries': typeof InquiriesRouteWithChildren
   '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
@@ -161,6 +170,7 @@ export interface FileRouteTypes {
     | '/assignments'
     | '/dashboard'
     | '/forgot-password'
+    | '/gallery'
     | '/inquiries'
     | '/library'
     | '/login'
@@ -178,6 +188,7 @@ export interface FileRouteTypes {
     | '/assignments'
     | '/dashboard'
     | '/forgot-password'
+    | '/gallery'
     | '/inquiries'
     | '/library'
     | '/login'
@@ -195,6 +206,7 @@ export interface FileRouteTypes {
     | '/assignments'
     | '/dashboard'
     | '/forgot-password'
+    | '/gallery'
     | '/inquiries'
     | '/library'
     | '/login'
@@ -213,6 +225,7 @@ export interface RootRouteChildren {
   AssignmentsRoute: typeof AssignmentsRouteWithChildren
   DashboardRoute: typeof DashboardRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
+  GalleryRoute: typeof GalleryRoute
   InquiriesRoute: typeof InquiriesRouteWithChildren
   LibraryRoute: typeof LibraryRoute
   LoginRoute: typeof LoginRoute
@@ -265,6 +278,13 @@ declare module '@tanstack/react-router' {
       path: '/inquiries'
       fullPath: '/inquiries'
       preLoaderRoute: typeof InquiriesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/gallery': {
+      id: '/gallery'
+      path: '/gallery'
+      fullPath: '/gallery'
+      preLoaderRoute: typeof GalleryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/forgot-password': {
@@ -363,6 +383,7 @@ const rootRouteChildren: RootRouteChildren = {
   AssignmentsRoute: AssignmentsRouteWithChildren,
   DashboardRoute: DashboardRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
+  GalleryRoute: GalleryRoute,
   InquiriesRoute: InquiriesRouteWithChildren,
   LibraryRoute: LibraryRoute,
   LoginRoute: LoginRoute,
@@ -375,3 +396,12 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+  }
+}
