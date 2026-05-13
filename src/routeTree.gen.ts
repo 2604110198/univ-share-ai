@@ -24,6 +24,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as PostNewRouteImport } from './routes/post.new'
 import { Route as PostPostIdRouteImport } from './routes/post.$postId'
 import { Route as InquiriesThreadIdRouteImport } from './routes/inquiries.$threadId'
+import { Route as GalleryPostIdRouteImport } from './routes/gallery.$postId'
 import { Route as AssignmentsCourseIdRouteImport } from './routes/assignments.$courseId'
 
 const SignupRoute = SignupRouteImport.update({
@@ -101,6 +102,11 @@ const InquiriesThreadIdRoute = InquiriesThreadIdRouteImport.update({
   path: '/$threadId',
   getParentRoute: () => InquiriesRoute,
 } as any)
+const GalleryPostIdRoute = GalleryPostIdRouteImport.update({
+  id: '/$postId',
+  path: '/$postId',
+  getParentRoute: () => GalleryRoute,
+} as any)
 const AssignmentsCourseIdRoute = AssignmentsCourseIdRouteImport.update({
   id: '/$courseId',
   path: '/$courseId',
@@ -113,7 +119,7 @@ export interface FileRoutesByFullPath {
   '/assignments': typeof AssignmentsRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/forgot-password': typeof ForgotPasswordRoute
-  '/gallery': typeof GalleryRoute
+  '/gallery': typeof GalleryRouteWithChildren
   '/inquiries': typeof InquiriesRouteWithChildren
   '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
@@ -121,6 +127,7 @@ export interface FileRoutesByFullPath {
   '/profile': typeof ProfileRoute
   '/signup': typeof SignupRoute
   '/assignments/$courseId': typeof AssignmentsCourseIdRoute
+  '/gallery/$postId': typeof GalleryPostIdRoute
   '/inquiries/$threadId': typeof InquiriesThreadIdRoute
   '/post/$postId': typeof PostPostIdRoute
   '/post/new': typeof PostNewRoute
@@ -131,7 +138,7 @@ export interface FileRoutesByTo {
   '/assignments': typeof AssignmentsRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/forgot-password': typeof ForgotPasswordRoute
-  '/gallery': typeof GalleryRoute
+  '/gallery': typeof GalleryRouteWithChildren
   '/inquiries': typeof InquiriesRouteWithChildren
   '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
@@ -139,6 +146,7 @@ export interface FileRoutesByTo {
   '/profile': typeof ProfileRoute
   '/signup': typeof SignupRoute
   '/assignments/$courseId': typeof AssignmentsCourseIdRoute
+  '/gallery/$postId': typeof GalleryPostIdRoute
   '/inquiries/$threadId': typeof InquiriesThreadIdRoute
   '/post/$postId': typeof PostPostIdRoute
   '/post/new': typeof PostNewRoute
@@ -150,7 +158,7 @@ export interface FileRoutesById {
   '/assignments': typeof AssignmentsRouteWithChildren
   '/dashboard': typeof DashboardRoute
   '/forgot-password': typeof ForgotPasswordRoute
-  '/gallery': typeof GalleryRoute
+  '/gallery': typeof GalleryRouteWithChildren
   '/inquiries': typeof InquiriesRouteWithChildren
   '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
@@ -158,6 +166,7 @@ export interface FileRoutesById {
   '/profile': typeof ProfileRoute
   '/signup': typeof SignupRoute
   '/assignments/$courseId': typeof AssignmentsCourseIdRoute
+  '/gallery/$postId': typeof GalleryPostIdRoute
   '/inquiries/$threadId': typeof InquiriesThreadIdRoute
   '/post/$postId': typeof PostPostIdRoute
   '/post/new': typeof PostNewRoute
@@ -178,6 +187,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/signup'
     | '/assignments/$courseId'
+    | '/gallery/$postId'
     | '/inquiries/$threadId'
     | '/post/$postId'
     | '/post/new'
@@ -196,6 +206,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/signup'
     | '/assignments/$courseId'
+    | '/gallery/$postId'
     | '/inquiries/$threadId'
     | '/post/$postId'
     | '/post/new'
@@ -214,6 +225,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/signup'
     | '/assignments/$courseId'
+    | '/gallery/$postId'
     | '/inquiries/$threadId'
     | '/post/$postId'
     | '/post/new'
@@ -225,7 +237,7 @@ export interface RootRouteChildren {
   AssignmentsRoute: typeof AssignmentsRouteWithChildren
   DashboardRoute: typeof DashboardRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
-  GalleryRoute: typeof GalleryRoute
+  GalleryRoute: typeof GalleryRouteWithChildren
   InquiriesRoute: typeof InquiriesRouteWithChildren
   LibraryRoute: typeof LibraryRoute
   LoginRoute: typeof LoginRoute
@@ -343,6 +355,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InquiriesThreadIdRouteImport
       parentRoute: typeof InquiriesRoute
     }
+    '/gallery/$postId': {
+      id: '/gallery/$postId'
+      path: '/$postId'
+      fullPath: '/gallery/$postId'
+      preLoaderRoute: typeof GalleryPostIdRouteImport
+      parentRoute: typeof GalleryRoute
+    }
     '/assignments/$courseId': {
       id: '/assignments/$courseId'
       path: '/$courseId'
@@ -365,6 +384,17 @@ const AssignmentsRouteWithChildren = AssignmentsRoute._addFileChildren(
   AssignmentsRouteChildren,
 )
 
+interface GalleryRouteChildren {
+  GalleryPostIdRoute: typeof GalleryPostIdRoute
+}
+
+const GalleryRouteChildren: GalleryRouteChildren = {
+  GalleryPostIdRoute: GalleryPostIdRoute,
+}
+
+const GalleryRouteWithChildren =
+  GalleryRoute._addFileChildren(GalleryRouteChildren)
+
 interface InquiriesRouteChildren {
   InquiriesThreadIdRoute: typeof InquiriesThreadIdRoute
 }
@@ -383,7 +413,7 @@ const rootRouteChildren: RootRouteChildren = {
   AssignmentsRoute: AssignmentsRouteWithChildren,
   DashboardRoute: DashboardRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
-  GalleryRoute: GalleryRoute,
+  GalleryRoute: GalleryRouteWithChildren,
   InquiriesRoute: InquiriesRouteWithChildren,
   LibraryRoute: LibraryRoute,
   LoginRoute: LoginRoute,
