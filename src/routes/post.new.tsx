@@ -139,7 +139,7 @@ function NewPostPage() {
         <Link to="/dashboard" className="text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-1 mb-3">
           <ArrowLeft className="h-3 w-3" /> 돌아가기
         </Link>
-        <PageHeader icon={FileEdit} title={`${CATEGORY_LABEL[category]} 작성`} />
+        <PageHeader icon={FileEdit} title={`${CATEGORY_LABEL[category as CategoryParam]} 작성`} />
 
         <div className="space-y-5 rounded-lg border border-border bg-card p-6">
           <div className="space-y-2">
