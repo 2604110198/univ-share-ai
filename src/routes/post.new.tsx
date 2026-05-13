@@ -79,6 +79,7 @@ function NewPostPage() {
     (category === "material" && profile.role === "professor") ||
     (category === "notice" && profile.role === "professor") ||
     (category === "assignment" && profile.role === "professor") ||
+    (category === "gallery" && profile.role === "professor") ||
     category === "inquiry";
 
   if (!canPost) {
@@ -97,6 +98,7 @@ function NewPostPage() {
     if (!title.trim()) { toast.error("제목을 입력하세요"); return; }
     if (category === "assignment" && !courseId) { toast.error("강의를 선택하세요"); return; }
     if (category === "inquiry" && !targetProf) { toast.error("문의 대상 교수를 선택하세요"); return; }
+    if (category === "gallery" && files.length === 0) { toast.error("이미지를 1개 이상 첨부하세요"); return; }
     setSubmitting(true);
 
     type Insert = Database["public"]["Tables"]["posts"]["Insert"];
@@ -116,12 +118,18 @@ function NewPostPage() {
       return;
     }
     if (files.length) {
-      const errs = await uploadAttachments({ postId: created.id, files, uploaderId: user.id });
+      const errs = category === "gallery"
+        ? await uploadGalleryImages({ postId: created.id, files, uploaderId: user.id })
+        : await uploadAttachments({ postId: created.id, files, uploaderId: user.id });
       if (errs.length) toast.error("일부 파일 업로드 실패", { description: errs.join("\n") });
     }
     setSubmitting(false);
     toast.success("글이 등록되었습니다");
-    navigate({ to: "/post/$postId", params: { postId: created.id } });
+    if (category === "gallery") {
+      navigate({ to: "/gallery" });
+    } else {
+      navigate({ to: "/post/$postId", params: { postId: created.id } });
+    }
   };
 
   return (
