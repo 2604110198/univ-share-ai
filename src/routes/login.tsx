@@ -80,7 +80,7 @@ function LoginPage() {
 
           <Tabs value={tab} onValueChange={(v) => setTab(v as "student" | "professor")}>
             <TabsList className="grid grid-cols-2 w-full">
-              <TabsTrigger value="student">학생 / 관리자</TabsTrigger>
+              <TabsTrigger value="student">학생</TabsTrigger>
               <TabsTrigger value="professor">교수</TabsTrigger>
             </TabsList>
 
