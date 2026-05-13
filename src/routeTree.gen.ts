@@ -15,6 +15,7 @@ import { Route as NoticesRouteImport } from './routes/notices'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LibraryRouteImport } from './routes/library'
 import { Route as InquiriesRouteImport } from './routes/inquiries'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AssignmentsRouteImport } from './routes/assignments'
 import { Route as AdminRouteImport } from './routes/admin'
@@ -52,6 +53,11 @@ const LibraryRoute = LibraryRouteImport.update({
 const InquiriesRoute = InquiriesRouteImport.update({
   id: '/inquiries',
   path: '/inquiries',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRoute = DashboardRouteImport.update({
@@ -100,6 +106,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/assignments': typeof AssignmentsRouteWithChildren
   '/dashboard': typeof DashboardRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/inquiries': typeof InquiriesRouteWithChildren
   '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
@@ -116,6 +123,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/assignments': typeof AssignmentsRouteWithChildren
   '/dashboard': typeof DashboardRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/inquiries': typeof InquiriesRouteWithChildren
   '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
@@ -133,6 +141,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/assignments': typeof AssignmentsRouteWithChildren
   '/dashboard': typeof DashboardRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/inquiries': typeof InquiriesRouteWithChildren
   '/library': typeof LibraryRoute
   '/login': typeof LoginRoute
@@ -151,6 +160,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/assignments'
     | '/dashboard'
+    | '/forgot-password'
     | '/inquiries'
     | '/library'
     | '/login'
@@ -167,6 +177,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/assignments'
     | '/dashboard'
+    | '/forgot-password'
     | '/inquiries'
     | '/library'
     | '/login'
@@ -183,6 +194,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/assignments'
     | '/dashboard'
+    | '/forgot-password'
     | '/inquiries'
     | '/library'
     | '/login'
@@ -200,6 +212,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   AssignmentsRoute: typeof AssignmentsRouteWithChildren
   DashboardRoute: typeof DashboardRoute
+  ForgotPasswordRoute: typeof ForgotPasswordRoute
   InquiriesRoute: typeof InquiriesRouteWithChildren
   LibraryRoute: typeof LibraryRoute
   LoginRoute: typeof LoginRoute
@@ -252,6 +265,13 @@ declare module '@tanstack/react-router' {
       path: '/inquiries'
       fullPath: '/inquiries'
       preLoaderRoute: typeof InquiriesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -342,6 +362,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   AssignmentsRoute: AssignmentsRouteWithChildren,
   DashboardRoute: DashboardRoute,
+  ForgotPasswordRoute: ForgotPasswordRoute,
   InquiriesRoute: InquiriesRouteWithChildren,
   LibraryRoute: LibraryRoute,
   LoginRoute: LoginRoute,
