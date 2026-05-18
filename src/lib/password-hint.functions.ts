@@ -31,7 +31,9 @@ async function encryptPw(plain: string): Promise<{ ciphertext: string; iv: strin
 }
 async function decryptPw(ciphertext: string, iv: string): Promise<string> {
   const key = await getKey();
-  const pt = await crypto.subtle.decrypt({ name: "AES-GCM", iv: unb64(iv) }, key, unb64(ciphertext));
+  const ivBuf = unb64(iv);
+  const ctBuf = unb64(ciphertext);
+  const pt = await crypto.subtle.decrypt({ name: "AES-GCM", iv: ivBuf as BufferSource }, key, ctBuf as BufferSource);
   return new TextDecoder().decode(pt);
 }
 
