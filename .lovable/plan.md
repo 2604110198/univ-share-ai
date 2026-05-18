@@ -1,68 +1,83 @@
-## 작업 계획
+## 작업 범위
 
-### 1. 로그인 화면 정리 (`src/routes/login.tsx`)
-- 탭 UI 제거 → 학생/관리자 공통 학번 입력 + 교수 탭만 별도 유지 (또는 "학번/이메일" 단일 입력)
-- 단순화: 탭 2개 유지하되 라벨을 "학생" / "교수"로 변경 (관리자는 학번 0000으로 학생 탭에서 로그인)
-- "비밀번호 찾기" 링크 추가
+### 1. 메인 페이지 레이아웃 재배치 (`src/routes/index.tsx`)
+- 3컬럼 그리드로 재구성: **좌(학과 갤러리) / 중(주요 기능 6개) / 우(학교 홈페이지)**
+- 학교 홈페이지 링크 변경: `https://www.kopo.ac.kr` → `https://www.kopo.ac.kr/semi/index.do` (반도체융합캠퍼스)
 
-### 2. 비밀번호 찾기 (`src/routes/forgot-password.tsx` 신규)
-- 학번 또는 교수 이메일 입력
-- 서버 함수(createServerFn + service role)로 `auth.users` 조회 후 비밀번호 표시
-- ⚠️ Supabase는 비밀번호를 해시로만 저장하므로 **원본 비밀번호 복구 불가**
-  - 대신 **임시 비밀번호 발급** 방식으로 구현: 새 임시 비밀번호 생성 → 사용자에게 1회 표시(맨 뒤 2자 `**` 마스킹) → DB 업데이트
-  - 사용자에게 이 정책을 안내 메시지로 표시
+### 2. 파일 업로드 용량 확대
+- `src/lib/format.ts`의 `MAX_FILE_SIZE` 상수를 현재 500MB → **5GB**로 확대 (강의 영상 보관 목적)
+- 클라이언트 검증 제거에 가깝게 완화. (실제 storage 버킷 한도는 Supabase 플랜에 따름 — 안내 문구 추가)
+- `src/lib/attachments.ts` 에러 메시지도 갱신.
 
-### 3. 메인 배너 배경 이미지 (관리자 편집)
-- 신규 테이블 `site_settings` (key/value): banner_image_url, school_link_image_url 저장
-- Storage 버킷 `site-assets` (public)
-- 메인 화면(`src/routes/index.tsx`)에 배너 영역 + 관리자만 보이는 "편집" 버튼
+### 3. 강의 관리 — 수정 기능
+- `src/routes/admin.tsx`의 강의 목록에 **수정 버튼**(삭제 왼쪽)을 추가.
+- 클릭 시 등록 폼에 기존 값(name, weekday, start/end, classroom, professor, description)을 prefill하고 "수정" 모드로 전환.
+- 저장 시 `UPDATE courses` 실행 후 폼 리셋, 강의실 페이지에 즉시 반영.
 
-### 4. 이미지 게시판
-- 신규 카테고리 `gallery` 추가 (post_category enum)
-- 메인 화면 좌측 중하단: 최근 이미지 3개 캐러셀 (점 3개 hover 시 스크롤)
-- 이미지 없으면 placeholder
-- 클릭 시 `/gallery` 전체 목록 (한 페이지 12개)
-- 글 작성: 제목 + 여러 이미지 + 설명. 미리보기 카드 중앙 하단에 제목 오버레이
+### 4. 로그인 동작 점검
+- `src/routes/login.tsx`의 학생 로그인 흐름 점검:
+  - `studentIdToEmail` 정상 동작 확인 (`{sid}@students.campus.local`)
+  - 성공 후 `auth-context`가 profile을 가져와 메인 진입까지 막힘 없도록 useEffect 의존성 정리.
+- 로그인 직후 navigate가 profile 로드 전 발생하면 `/` 의 로딩 상태가 보일 수 있어, 토스트 후 `window.location.replace("/")` 대신 router navigate 유지하고 `__root` 의 onAuthStateChange invalidate가 작동하는지 확인.
 
-### 5. 학교 홈페이지 링크 이미지
-- 메인 화면에 클릭 시 www.kopo.ac.kr 새 탭으로 이동
-- 관리자 로그인 시 "편집" 버튼 노출 → site_settings에서 이미지 변경
+### 5. 비밀번호 찾기 — 두 가지 모드로 재설계
 
-### 6. 공지사항 고정/해제
-- `posts.is_pinned` 컬럼 이미 존재 → 관리자 UI 토글 추가
-- `src/routes/notices.tsx`에서 고정 공지 행 배경을 `bg-muted/40`로 표시
+**중요한 제약 (사용자에게 안내):**
+Supabase Auth는 비밀번호를 단방향 해시(bcrypt)로만 저장하므로 "원래 비밀번호의 앞 2자리 + 나머지 \*"를 그대로 보여주는 것은 **기술적으로 불가능**합니다. 어떤 방식으로도 원본을 복원할 수 없습니다.
 
-### 기술 세부
+대안 — 사용자 의도에 가장 가까운 2단계 흐름으로 구현:
 
-**DB 마이그레이션**:
+**(A) 비밀번호 힌트 보기 (즉시)**
+- 회원가입/비밀번호 변경 시점에 비밀번호를 **암호화**(AES-GCM, 서버측 비밀키 사용)해서 `password_hints` 테이블에 별도 저장.
+- 비밀번호 찾기 화면에서 학번/이메일 입력 → 서버 함수가 복호화 후 **앞 2자리 + 나머지 \*** 형식으로 반환.
+- 보안 고지: "이 힌트는 본인 확인용이며 화면 캡처에 주의" 안내 문구 표시.
+- 신규 가입/변경부터 적용되며, 기존 사용자는 힌트가 없으므로 **(B)** 안내.
+
+**(B) 복구 신청 (관리자 처리)**
+- "복구 신청" 버튼 → `recovery_requests` 테이블에 학번/이메일·신청시각 insert.
+- 관리자 페이지에 **복구 신청 목록** 섹션 신설. 각 신청에 "임시 비밀번호 발급" 버튼.
+- 발급 시 서버함수가 `auth.admin.updateUserById`로 임시 PW 설정 + 신청 상태 `완료`로 갱신 + 결과(임시 PW)를 **관리자에게만** 표시 → 관리자가 학생에게 통보.
+- 로그인 후 학생은 `/profile` 에서 새 비밀번호로 변경 가능 (기존 기능 활용 + 비밀번호 변경 UI 추가).
+
+### 기술 세부사항
+
+**DB 마이그레이션:**
 ```sql
--- 1. site_settings 테이블
-CREATE TABLE public.site_settings (
-  key text PRIMARY KEY,
-  value text,
-  updated_at timestamptz DEFAULT now(),
-  updated_by uuid
+-- 비밀번호 힌트 (암호화 저장)
+CREATE TABLE password_hints (
+  user_id uuid PRIMARY KEY,
+  ciphertext text NOT NULL,
+  iv text NOT NULL,
+  updated_at timestamptz DEFAULT now()
 );
--- RLS: 모든 인증 사용자 SELECT, 관리자만 UPDATE/INSERT
+ALTER TABLE password_hints ENABLE ROW LEVEL SECURITY;
+-- 본인만 읽기 / 서비스롤만 쓰기 (RLS: id = auth.uid())
 
--- 2. gallery 카테고리 추가
-ALTER TYPE post_category ADD VALUE 'gallery';
--- posts insert RLS 갱신: gallery는 관리자/교수만 작성
-
--- 3. 스토리지 버킷
-INSERT INTO storage.buckets(id,name,public) VALUES ('site-assets','site-assets',true);
--- gallery 이미지는 기존 course-files 버킷 또는 신규 gallery-images(public) 사용
+-- 복구 신청
+CREATE TABLE password_recovery_requests (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL,
+  requested_at timestamptz DEFAULT now(),
+  status text NOT NULL DEFAULT 'pending', -- pending | completed
+  temp_password_issued_at timestamptz
+);
+-- 본인 insert/select, 관리자 전체 관리
 ```
 
-**임시 비밀번호 발급 서버 함수** (`src/lib/password-recovery.functions.ts`):
-- middleware 없이 호출 (비로그인 상태에서 호출)
-- `supabaseAdmin.auth.admin.updateUserById()` 로 임시 비밀번호 설정
-- 응답: `{ tempPassword: "abcdef**" }` (마지막 2자 `**` 마스킹)
+**Secret 추가 필요:** `PASSWORD_HINT_KEY` (32바이트 base64) — 힌트 암복호화용.
 
-**파일 변경 요약**:
-- 신규: `src/routes/forgot-password.tsx`, `src/routes/gallery.tsx`, `src/routes/gallery.$postId.tsx`, `src/components/banner-editor.tsx`, `src/components/image-carousel.tsx`, `src/lib/password-recovery.functions.ts`, `src/lib/site-settings.ts`
-- 수정: `src/routes/login.tsx` (탭 단순화 + 비밀번호 찾기 링크), `src/routes/index.tsx` (배너+캐러셀+학교링크), `src/routes/notices.tsx` (고정 토글 + 배경 색), `src/routes/post.new.tsx` (gallery 카테고리 지원), `src/components/site-header.tsx` (gallery 메뉴 제외 확인)
-- 마이그레이션 1개
+**서버 함수:**
+- `storePasswordHint(userId, plain)` — 가입·변경 시 호출 (admin 클라이언트).
+- `getPasswordHint({studentId|email})` — 마스킹된 힌트 반환.
+- `requestPasswordRecovery({studentId|email})` — 신청 행 생성.
+- `issueTempPasswordForRequest(requestId)` — 관리자 전용, 임시 PW 생성.
 
-### 확인사항
-- 비밀번호는 해시로만 저장되어 원본 복구가 불가능합니다. 대신 **임시 비밀번호를 새로 발급**해서 보여드리는 방식으로 구현해도 될까요? (보안 표준 방식)
+### 변경 파일
+- 수정: `src/routes/index.tsx`, `src/lib/format.ts`, `src/lib/attachments.ts`, `src/routes/admin.tsx`, `src/routes/login.tsx`, `src/routes/forgot-password.tsx`, `src/routes/profile.tsx`, `src/routes/signup.tsx`.
+- 신규: `src/lib/password-hint.functions.ts`, `src/lib/password-recovery-requests.functions.ts`.
+- 마이그레이션 1건, secret 1건.
+
+### 확인 필요
+1. **비밀번호 힌트 저장 방식**: 위의 (A)+(B) 조합으로 진행해도 될까요? 아니면 (B) 복구 신청만 구현할까요?
+2. **PASSWORD_HINT_KEY** secret을 추가해도 될까요? (필요 시 자동 요청)
+3. 파일 업로드 한도를 **5GB**로 설정하면 될까요? (더 크게 원하시면 알려주세요)

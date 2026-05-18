@@ -11,7 +11,7 @@ import { galleryImageUrl } from "@/lib/attachments";
 import { getSetting, SETTING_KEYS } from "@/lib/site-settings";
 import { AdminImageEditButton } from "@/components/banner-editor";
 
-const SCHOOL_LINK = "https://www.kopo.ac.kr";
+const SCHOOL_LINK = "https://www.kopo.ac.kr/semi/index.do";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -135,11 +135,21 @@ function Index() {
           </div>
         </section>
 
-        {/* Features + side widgets (gallery carousel + school link) */}
+        {/* Features (center) flanked by gallery (left) and school link (right) */}
         <section className="border-t border-border bg-card/40">
-          <div className="mx-auto max-w-7xl px-6 py-16 grid lg:grid-cols-3 gap-8">
+          <div className="mx-auto max-w-7xl px-6 py-16 grid lg:grid-cols-4 gap-8 items-start">
+            {/* LEFT — Gallery */}
+            <aside className="lg:col-span-1 lg:sticky lg:top-24">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="font-serif text-lg font-bold text-primary">학과 갤러리</h3>
+                <Link to="/gallery" className="text-xs text-muted-foreground hover:text-primary">전체보기 →</Link>
+              </div>
+              <ImageCarousel slides={slides} />
+            </aside>
+
+            {/* CENTER — Features */}
             <div className="lg:col-span-2">
-              <div className="mb-10">
+              <div className="mb-10 text-center">
                 <h2 className="font-serif text-3xl font-bold text-primary">학과 디스크 주요 기능</h2>
                 <p className="mt-2 text-muted-foreground">교수와 학생을 위한 메뉴</p>
               </div>
@@ -163,16 +173,9 @@ function Index() {
               </div>
             </div>
 
-            {/* Side column: image gallery preview + school link */}
-            <aside className="space-y-5 lg:mt-24">
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-serif text-lg font-bold text-primary">학과 갤러리</h3>
-                  <Link to="/gallery" className="text-xs text-muted-foreground hover:text-primary">전체보기 →</Link>
-                </div>
-                <ImageCarousel slides={slides} />
-              </div>
-
+            {/* RIGHT — School link */}
+            <aside className="lg:col-span-1 lg:sticky lg:top-24">
+              <h3 className="font-serif text-lg font-bold text-primary mb-2">학교 홈페이지</h3>
               <div className="relative">
                 {isAdmin && user && (
                   <AdminImageEditButton
@@ -189,18 +192,18 @@ function Index() {
                   className="block relative aspect-[16/9] rounded-lg overflow-hidden border border-border bg-primary text-primary-foreground group"
                 >
                   {schoolImg ? (
-                    <img src={schoolImg} alt="학교 홈페이지로 이동" className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-105" />
+                    <img src={schoolImg} alt="한국폴리텍대학교 반도체융합캠퍼스" className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-105" />
                   ) : (
                     <div className="absolute inset-0 grid place-items-center bg-gradient-to-br from-primary to-primary/70">
                       <div className="text-center px-4">
                         <GraduationCap className="h-8 w-8 mx-auto mb-2 text-accent" />
-                        <div className="font-serif font-bold">한국폴리텍대학교</div>
-                        <div className="text-xs opacity-80">www.kopo.ac.kr</div>
+                        <div className="font-serif font-bold text-sm">한국폴리텍대학교</div>
+                        <div className="text-xs opacity-80">반도체융합캠퍼스</div>
                       </div>
                     </div>
                   )}
                   <div className="absolute inset-x-0 bottom-0 p-2 bg-black/50 text-white text-xs flex items-center justify-between">
-                    <span>학교 홈페이지 바로가기</span>
+                    <span>반도체융합캠퍼스 바로가기</span>
                     <ExternalLink className="h-3.5 w-3.5" />
                   </div>
                 </a>

@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import { SiteHeader } from "@/components/site-header";
@@ -11,6 +12,7 @@ import { toast } from "sonner";
 import { UserCog } from "lucide-react";
 import { ROLE_LABEL } from "@/lib/format";
 import { validatePassword } from "@/lib/credentials";
+import { storePasswordHint } from "@/lib/password-hint.functions";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({ meta: [{ title: "회원 정보 변경 — 반도체장비소프트웨어학과" }] }),
@@ -20,6 +22,7 @@ export const Route = createFileRoute("/profile")({
 function ProfilePage() {
   const { user, profile, loading, refreshProfile } = useAuth();
   const navigate = useNavigate();
+  const storeHintFn = useServerFn(storePasswordHint);
   const [name, setName] = useState("");
   const [namePw, setNamePw] = useState("");
   const [savingName, setSavingName] = useState(false);
@@ -65,8 +68,9 @@ function ProfilePage() {
     });
     if (signInErr) { setSavingPw(false); toast.error("현재 비밀번호가 올바르지 않습니다"); return; }
     const { error } = await supabase.auth.updateUser({ password: newPw });
+    if (error) { setSavingPw(false); toast.error("비밀번호 변경 실패", { description: error.message }); return; }
+    try { await storeHintFn({ data: { userId: user.id, password: newPw } }); } catch { /* non-fatal */ }
     setSavingPw(false);
-    if (error) { toast.error("비밀번호 변경 실패", { description: error.message }); return; }
     toast.success("비밀번호가 변경되었습니다");
     setCurrentPw(""); setNewPw(""); setConfirmPw("");
   };

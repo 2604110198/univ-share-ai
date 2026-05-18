@@ -8,12 +8,14 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { BookOpen } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
 import {
   studentIdToEmail,
   validatePassword,
   validateStudentId,
   ADMIN_STUDENT_ID,
 } from "@/lib/credentials";
+import { storePasswordHint } from "@/lib/password-hint.functions";
 
 export const Route = createFileRoute("/signup")({
   head: () => ({ meta: [{ title: "회원가입 — Campus Drive" }] }),
@@ -23,6 +25,7 @@ export const Route = createFileRoute("/signup")({
 function SignupPage() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const storeHintFn = useServerFn(storePasswordHint);
   const [role, setRole] = useState<"student" | "professor">("student");
   const [email, setEmail] = useState("");
   const [studentId, setStudentId] = useState("");
@@ -63,7 +66,7 @@ function SignupPage() {
     }
 
     setSubmitting(true);
-    const { error } = await supabase.auth.signUp({
+    const { data: signUpData, error } = await supabase.auth.signUp({
       email: signupEmail,
       password,
       options: {
@@ -87,6 +90,13 @@ function SignupPage() {
       toast.error("회원가입 실패", { description: msg });
       return;
     }
+
+    // Store encrypted password hint so the user can recover an "앞 2자리 + ***" later
+    const uid = signUpData.user?.id;
+    if (uid) {
+      try { await storeHintFn({ data: { userId: uid, password } }); } catch { /* non-fatal */ }
+    }
+
     await supabase.auth.signOut();
     setSubmitting(false);
     toast.success("가입이 완료되었습니다", { description: "이제 로그인할 수 있습니다." });

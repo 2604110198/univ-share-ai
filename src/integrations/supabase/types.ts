@@ -101,6 +101,63 @@ export type Database = {
         }
         Relationships: []
       }
+      password_hints: {
+        Row: {
+          ciphertext: string
+          iv: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ciphertext: string
+          iv: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ciphertext?: string
+          iv?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      password_recovery_requests: {
+        Row: {
+          completed_at: string | null
+          full_name: string | null
+          id: string
+          identifier: string
+          requested_at: string
+          role: string | null
+          status: string
+          temp_password: string | null
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          full_name?: string | null
+          id?: string
+          identifier: string
+          requested_at?: string
+          role?: string | null
+          status?: string
+          temp_password?: string | null
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          full_name?: string | null
+          id?: string
+          identifier?: string
+          requested_at?: string
+          role?: string | null
+          status?: string
+          temp_password?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       post_attachments: {
         Row: {
           created_at: string

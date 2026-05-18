@@ -43,4 +43,6 @@ export const WEEKDAY_LABEL: Record<string, string> = {
 };
 export const WEEKDAY_ORDER = ["mon", "tue", "wed", "thu", "fri"] as const;
 
-export const MAX_FILE_SIZE = 500 * 1024 * 1024; // 500MB
+// Practically unlimited for the app; the real ceiling is the storage bucket / plan.
+// 50GB lets long lecture recordings and HD videos through without client-side blocking.
+export const MAX_FILE_SIZE = 50 * 1024 * 1024 * 1024; // 50GB
