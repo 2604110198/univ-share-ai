@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useCallback } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import { SiteHeader } from "@/components/site-header";
@@ -9,11 +10,12 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Trash2, UserCog, GraduationCap, Users, Settings, BookOpen } from "lucide-react";
+import { Trash2, UserCog, GraduationCap, Users, Settings, BookOpen, Pencil, KeyRound, Copy } from "lucide-react";
 import { WEEKDAY_LABEL, WEEKDAY_ORDER } from "@/lib/format";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ROLE_LABEL, formatDate } from "@/lib/format";
 import { validatePassword } from "@/lib/credentials";
+import { issueTempPasswordForRequest } from "@/lib/password-recovery.functions";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "관리자 — Campus Drive" }] }),
@@ -56,6 +58,7 @@ function AdminPage() {
             <TabsTrigger value="professors"><UserCog className="h-4 w-4 mr-1.5" />허용 교수</TabsTrigger>
             <TabsTrigger value="courses"><BookOpen className="h-4 w-4 mr-1.5" />강의 관리</TabsTrigger>
             <TabsTrigger value="users"><Users className="h-4 w-4 mr-1.5" />가입 사용자</TabsTrigger>
+            <TabsTrigger value="recovery"><KeyRound className="h-4 w-4 mr-1.5" />비밀번호 복구</TabsTrigger>
           </TabsList>
 
           <TabsContent value="settings" className="mt-6"><AdminSettingsPanel /></TabsContent>
@@ -63,6 +66,7 @@ function AdminPage() {
           <TabsContent value="professors" className="mt-6"><AllowedProfessorsPanel /></TabsContent>
           <TabsContent value="courses" className="mt-6"><CoursesPanel /></TabsContent>
           <TabsContent value="users" className="mt-6"><UsersPanel /></TabsContent>
+          <TabsContent value="recovery" className="mt-6"><RecoveryPanel /></TabsContent>
         </Tabs>
       </main>
     </div>
@@ -364,17 +368,20 @@ interface CourseRow {
   id: string; name: string; weekday: string;
   start_time: string; end_time: string; classroom: string | null;
   professor_id: string | null; professor_name: string | null;
+  description?: string | null;
 }
 
 function CoursesPanel() {
   const [rows, setRows] = useState<CourseRow[]>([]);
   const [profs, setProfs] = useState<{ id: string; full_name: string }[]>([]);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [weekday, setWeekday] = useState<string>("mon");
   const [startTime, setStartTime] = useState("09:00");
   const [endTime, setEndTime] = useState("10:30");
   const [classroom, setClassroom] = useState("");
   const [profId, setProfId] = useState("");
+  const [description, setDescription] = useState("");
 
   const load = useCallback(async () => {
     const { data } = await supabase.from("courses").select("*").order("weekday").order("start_time");
@@ -384,10 +391,28 @@ function CoursesPanel() {
   }, []);
   useEffect(() => { load(); }, [load]);
 
-  const add = async () => {
+  const resetForm = () => {
+    setEditingId(null);
+    setName(""); setWeekday("mon"); setStartTime("09:00"); setEndTime("10:30");
+    setClassroom(""); setProfId(""); setDescription("");
+  };
+
+  const startEdit = (r: CourseRow) => {
+    setEditingId(r.id);
+    setName(r.name);
+    setWeekday(r.weekday);
+    setStartTime(r.start_time.slice(0, 5));
+    setEndTime(r.end_time.slice(0, 5));
+    setClassroom(r.classroom ?? "");
+    setProfId(r.professor_id ?? "");
+    setDescription(r.description ?? "");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const save = async () => {
     if (!name.trim()) { toast.error("강의명을 입력하세요"); return; }
     const prof = profs.find((p) => p.id === profId);
-    const { error } = await supabase.from("courses").insert({
+    const payload = {
       name: name.trim(),
       weekday: weekday as "mon" | "tue" | "wed" | "thu" | "fri",
       start_time: startTime,
@@ -395,10 +420,18 @@ function CoursesPanel() {
       classroom: classroom.trim() || null,
       professor_id: profId || null,
       professor_name: prof?.full_name ?? null,
-    });
-    if (error) { toast.error("등록 실패", { description: error.message }); return; }
-    toast.success("강의가 등록되었습니다");
-    setName(""); setClassroom(""); setProfId("");
+      description: description.trim() || null,
+    };
+    if (editingId) {
+      const { error } = await supabase.from("courses").update(payload).eq("id", editingId);
+      if (error) { toast.error("수정 실패", { description: error.message }); return; }
+      toast.success("강의가 수정되었습니다");
+    } else {
+      const { error } = await supabase.from("courses").insert(payload);
+      if (error) { toast.error("등록 실패", { description: error.message }); return; }
+      toast.success("강의가 등록되었습니다");
+    }
+    resetForm();
     load();
   };
 
@@ -406,12 +439,13 @@ function CoursesPanel() {
     if (!confirm("정말 삭제하시겠습니까?")) return;
     const { error } = await supabase.from("courses").delete().eq("id", id);
     if (error) { toast.error("삭제 실패", { description: error.message }); return; }
+    if (editingId === id) resetForm();
     load();
   };
 
   return (
     <div className="grid lg:grid-cols-2 gap-6">
-      <Card title="강의 등록">
+      <Card title={editingId ? "강의 수정" : "강의 등록"}>
         <div className="space-y-3">
           <div className="space-y-2"><Label>강의명</Label><Input value={name} onChange={(e) => setName(e.target.value)} placeholder="예: 반도체공정실습" /></div>
           <div className="grid grid-cols-2 gap-3">
@@ -442,7 +476,14 @@ function CoursesPanel() {
               </SelectContent>
             </Select>
           </div>
-          <Button onClick={add} className="w-full">등록</Button>
+          <div className="space-y-2">
+            <Label>설명 (선택)</Label>
+            <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="강의 설명" />
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={save} className="flex-1">{editingId ? "수정 저장" : "등록"}</Button>
+            {editingId && <Button variant="outline" onClick={resetForm}>취소</Button>}
+          </div>
         </div>
       </Card>
 
@@ -450,7 +491,7 @@ function CoursesPanel() {
         <div className="max-h-[600px] overflow-auto divide-y divide-border -m-4">
           {rows.length === 0 && <div className="p-6 text-center text-sm text-muted-foreground">등록된 강의가 없습니다.</div>}
           {rows.map((r) => (
-            <div key={r.id} className="flex items-center justify-between p-3 hover:bg-secondary/40">
+            <div key={r.id} className={`flex items-center justify-between p-3 hover:bg-secondary/40 ${editingId === r.id ? "bg-accent/10" : ""}`}>
               <div>
                 <div className="font-medium">{r.name}</div>
                 <div className="text-xs text-muted-foreground">
@@ -459,12 +500,104 @@ function CoursesPanel() {
                   {r.professor_name && ` · ${r.professor_name}`}
                 </div>
               </div>
-              <Button variant="ghost" size="sm" onClick={() => remove(r.id)} className="text-destructive">
-                <Trash2 className="h-4 w-4" />
+              <div className="flex items-center gap-1">
+                <Button variant="ghost" size="sm" onClick={() => startEdit(r)} title="수정">
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => remove(r.id)} className="text-destructive" title="삭제">
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+interface RecoveryRow {
+  id: string; user_id: string; identifier: string; full_name: string | null;
+  role: string | null; status: string; temp_password: string | null;
+  requested_at: string; completed_at: string | null;
+}
+
+function RecoveryPanel() {
+  const [rows, setRows] = useState<RecoveryRow[]>([]);
+  const [busy, setBusy] = useState<string | null>(null);
+  const issueFn = useServerFn(issueTempPasswordForRequest);
+
+  const load = useCallback(async () => {
+    const { data } = await supabase
+      .from("password_recovery_requests")
+      .select("*")
+      .order("requested_at", { ascending: false });
+    setRows((data ?? []) as RecoveryRow[]);
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  const issue = async (id: string) => {
+    if (!confirm("임시 비밀번호를 발급하시겠습니까? 발급 후 해당 학번/이메일 보유자에게 직접 통보해야 합니다.")) return;
+    setBusy(id);
+    try {
+      await issueFn({ data: { requestId: id } });
+      toast.success("임시 비밀번호가 발급되었습니다");
+      await load();
+    } catch (err) {
+      toast.error("발급 실패", { description: err instanceof Error ? err.message : "오류" });
+    } finally {
+      setBusy(null);
+    }
+  };
+
+  const copy = async (pw: string) => {
+    try { await navigator.clipboard.writeText(pw); toast.success("복사되었습니다"); } catch { toast.error("복사 실패"); }
+  };
+
+  const pending = rows.filter((r) => r.status === "pending");
+  const completed = rows.filter((r) => r.status === "completed");
+
+  return (
+    <div className="space-y-6">
+      <Card title={`대기 중인 복구 신청 (${pending.length})`}>
+        <div className="divide-y divide-border -m-4">
+          {pending.length === 0 && <div className="p-6 text-center text-sm text-muted-foreground">대기 중인 신청이 없습니다.</div>}
+          {pending.map((r) => (
+            <div key={r.id} className="flex items-center justify-between p-3">
+              <div>
+                <div className="font-medium">{r.full_name ?? "—"} <span className="text-xs text-muted-foreground ml-1">({ROLE_LABEL[r.role ?? ""] ?? r.role})</span></div>
+                <div className="text-xs text-muted-foreground font-mono">{r.identifier}</div>
+                <div className="text-[11px] text-muted-foreground">신청: {formatDate(r.requested_at)}</div>
+              </div>
+              <Button size="sm" onClick={() => issue(r.id)} disabled={busy === r.id}>
+                {busy === r.id ? "발급 중..." : "임시 비밀번호 발급"}
               </Button>
             </div>
           ))}
         </div>
+      </Card>
+
+      <Card title={`처리 완료 (${completed.length})`}>
+        <div className="divide-y divide-border -m-4 max-h-[400px] overflow-auto">
+          {completed.length === 0 && <div className="p-6 text-center text-sm text-muted-foreground">처리된 신청이 없습니다.</div>}
+          {completed.map((r) => (
+            <div key={r.id} className="flex items-center justify-between p-3">
+              <div>
+                <div className="font-medium">{r.full_name ?? "—"} <span className="text-xs text-muted-foreground ml-1">({r.identifier})</span></div>
+                <div className="text-[11px] text-muted-foreground">처리: {formatDate(r.completed_at)}</div>
+                {r.temp_password && (
+                  <div className="mt-1 inline-flex items-center gap-2">
+                    <code className="font-mono text-sm bg-secondary px-2 py-0.5 rounded">{r.temp_password}</code>
+                    <Button size="sm" variant="ghost" onClick={() => copy(r.temp_password!)}><Copy className="h-3.5 w-3.5" /></Button>
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+        <p className="text-[11px] text-muted-foreground mt-3 px-1">
+          임시 비밀번호는 관리자만 볼 수 있습니다. 해당 학생/교수에게 직접 통보해 주세요. 로그인 후 즉시 새 비밀번호로 변경하도록 안내하세요.
+        </p>
       </Card>
     </div>
   );
