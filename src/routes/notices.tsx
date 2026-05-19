@@ -8,6 +8,7 @@ import { PostTable, type PostListItem } from "@/components/post-table";
 import { Button } from "@/components/ui/button";
 import { Megaphone, Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/notices")({
   head: () => ({ meta: [{ title: "공지사항 — 반도체장비소프트웨어학과" }] }),
