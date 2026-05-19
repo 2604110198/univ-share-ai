@@ -525,6 +525,7 @@ interface RecoveryRow {
 function RecoveryPanel() {
   const [rows, setRows] = useState<RecoveryRow[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
+  const [tempPwInputs, setTempPwInputs] = useState<Record<string, string>>({});
   const issueFn = useServerFn(issueTempPasswordForRequest);
 
   const load = useCallback(async () => {
@@ -537,11 +538,14 @@ function RecoveryPanel() {
   useEffect(() => { load(); }, [load]);
 
   const issue = async (id: string) => {
-    if (!confirm("임시 비밀번호를 발급하시겠습니까? 발급 후 해당 학번/이메일 보유자에게 직접 통보해야 합니다.")) return;
+    const pw = (tempPwInputs[id] ?? "").trim();
+    if (pw.length < 6) { toast.error("임시 비밀번호는 6자 이상이어야 합니다"); return; }
+    if (!confirm(`임시 비밀번호 "${pw}" 로 설정하시겠습니까? 발급 후 해당 사용자에게 직접 통보해 주세요.`)) return;
     setBusy(id);
     try {
-      await issueFn({ data: { requestId: id } });
+      await issueFn({ data: { requestId: id, tempPassword: pw } });
       toast.success("임시 비밀번호가 발급되었습니다");
+      setTempPwInputs((prev) => { const n = { ...prev }; delete n[id]; return n; });
       await load();
     } catch (err) {
       toast.error("발급 실패", { description: err instanceof Error ? err.message : "오류" });
@@ -563,15 +567,23 @@ function RecoveryPanel() {
         <div className="divide-y divide-border -m-4">
           {pending.length === 0 && <div className="p-6 text-center text-sm text-muted-foreground">대기 중인 신청이 없습니다.</div>}
           {pending.map((r) => (
-            <div key={r.id} className="flex items-center justify-between p-3">
+            <div key={r.id} className="p-3 space-y-2">
               <div>
                 <div className="font-medium">{r.full_name ?? "—"} <span className="text-xs text-muted-foreground ml-1">({ROLE_LABEL[r.role ?? ""] ?? r.role})</span></div>
                 <div className="text-xs text-muted-foreground font-mono">{r.identifier}</div>
                 <div className="text-[11px] text-muted-foreground">신청: {formatDate(r.requested_at)}</div>
               </div>
-              <Button size="sm" onClick={() => issue(r.id)} disabled={busy === r.id}>
-                {busy === r.id ? "발급 중..." : "임시 비밀번호 발급"}
-              </Button>
+              <div className="flex items-center gap-2">
+                <Input
+                  placeholder="임시 비밀번호 입력 (6자 이상)"
+                  value={tempPwInputs[r.id] ?? ""}
+                  onChange={(e) => setTempPwInputs((prev) => ({ ...prev, [r.id]: e.target.value }))}
+                  className="flex-1"
+                />
+                <Button size="sm" onClick={() => issue(r.id)} disabled={busy === r.id}>
+                  {busy === r.id ? "발급 중..." : "발급"}
+                </Button>
+              </div>
             </div>
           ))}
         </div>
@@ -596,7 +608,7 @@ function RecoveryPanel() {
           ))}
         </div>
         <p className="text-[11px] text-muted-foreground mt-3 px-1">
-          임시 비밀번호는 관리자만 볼 수 있습니다. 해당 학생/교수에게 직접 통보해 주세요. 로그인 후 즉시 새 비밀번호로 변경하도록 안내하세요.
+          관리자가 입력한 임시 비밀번호는 해당 사용자가 로그인 후 개인정보 수정에서 즉시 새 비밀번호로 변경할 수 있도록 안내해 주세요.
         </p>
       </Card>
     </div>
