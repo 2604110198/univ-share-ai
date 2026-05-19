@@ -8,6 +8,7 @@ import { PostTable, type PostListItem } from "@/components/post-table";
 import { Button } from "@/components/ui/button";
 import { Megaphone, Plus, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/notices")({
   head: () => ({ meta: [{ title: "공지사항 — 반도체장비소프트웨어학과" }] }),
@@ -44,14 +45,27 @@ function NoticesPage() {
   const pageRest = rest.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const visible = [...pinned, ...pageRest];
 
+  const [canPinUser, setCanPinUser] = useState(false);
+  useEffect(() => {
+    (async () => {
+      if (!profile) { setCanPinUser(false); return; }
+      if (profile.role === "admin") { setCanPinUser(true); return; }
+      if (profile.role === "professor") {
+        const { data } = await supabase.from("profiles").select("can_pin").eq("id", profile.id).maybeSingle();
+        setCanPinUser(Boolean(data?.can_pin));
+      } else {
+        setCanPinUser(false);
+      }
+    })();
+  }, [profile]);
+
   if (loading) return <div className="min-h-screen grid place-items-center text-muted-foreground">불러오는 중...</div>;
   if (!user) return null;
   const canWrite = profile?.role === "professor" || profile?.role === "admin";
-  const isAdmin = profile?.role === "admin";
 
   const togglePin = async (id: string, next: boolean) => {
     const { error } = await supabase.from("posts").update({ is_pinned: next }).eq("id", id);
-    if (error) return;
+    if (error) { toast.error("권한이 없습니다"); return; }
     setPosts((prev) => prev.map((p) => (p.id === id ? { ...p, is_pinned: next } : p)));
     setPage(1);
   };
@@ -78,7 +92,7 @@ function NoticesPage() {
               posts={visible}
               showCourse={false}
               emptyText="등록된 공지가 없습니다."
-              onTogglePin={isAdmin ? togglePin : undefined}
+              onTogglePin={canPinUser ? togglePin : undefined}
             />
             {totalPages > 1 && (
               <div className="mt-6 flex items-center justify-center gap-1">

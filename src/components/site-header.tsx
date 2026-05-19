@@ -3,7 +3,6 @@ import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { ROLE_LABEL } from "@/lib/format";
 import { SCHOOL_NAME, DEPARTMENT_NAME } from "@/lib/branding";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
@@ -25,8 +24,11 @@ import {
   Bell,
   UserCog,
   ChevronDown,
+  CheckCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { fetchMyNotifications, markRead, markAllRead, type NotificationRow } from "@/lib/notifications";
+import { formatPostDate } from "@/lib/format";
 
 const NAV = [
   { to: "/dashboard", label: "강의실", icon: BookOpen },
@@ -41,31 +43,31 @@ export function SiteHeader() {
   const { profile, user, signOut } = useAuth();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const [unread, setUnread] = useState(0);
+  const [notifications, setNotifications] = useState<NotificationRow[]>([]);
 
-  const loadUnread = useCallback(async () => {
-    if (!user) { setUnread(0); return; }
-    // Get all inquiries the user can see (RLS filters), then subtract reads.
-    const { data: visible } = await supabase
-      .from("posts")
-      .select("id, author_id, created_at")
-      .eq("category", "inquiry");
-    if (!visible) return;
-    // Exclude items I authored that nobody replied to (still count if I'm target/admin and unread)
-    const ids = visible.map((p) => p.id);
-    if (ids.length === 0) { setUnread(0); return; }
-    const { data: reads } = await supabase
-      .from("post_reads")
-      .select("post_id")
-      .eq("user_id", user.id)
-      .in("post_id", ids);
-    const readSet = new Set((reads ?? []).map((r) => r.post_id));
-    // Don't count items I authored as "unread for me"
-    const count = visible.filter((p) => p.author_id !== user.id && !readSet.has(p.id)).length;
-    setUnread(count);
+  const load = useCallback(async () => {
+    if (!user) { setNotifications([]); return; }
+    const rows = await fetchMyNotifications(user.id);
+    setNotifications(rows);
   }, [user]);
 
-  useEffect(() => { loadUnread(); }, [loadUnread, pathname]);
+  useEffect(() => { load(); }, [load, pathname]);
+
+  const unread = notifications.filter((n) => !n.read_at).length;
+
+  const onNotifClick = async (n: NotificationRow) => {
+    if (!n.read_at) {
+      await markRead(n.id);
+      setNotifications((prev) => prev.map((x) => (x.id === n.id ? { ...x, read_at: new Date().toISOString() } : x)));
+    }
+    if (n.link) navigate({ to: n.link });
+  };
+
+  const onMarkAll = async () => {
+    if (!user) return;
+    await markAllRead(user.id);
+    setNotifications((prev) => prev.map((x) => ({ ...x, read_at: x.read_at ?? new Date().toISOString() })));
+  };
 
   const handleNavClick = (e: React.MouseEvent, to: string) => {
     if (to === "/admin" && profile?.role !== "admin") {
@@ -89,14 +91,14 @@ export function SiteHeader() {
 
   return (
     <header className="border-b border-border bg-card sticky top-0 z-30 shadow-paper">
-      {/* Top utility strip */}
+      {/* Top utility strip — larger school name */}
       <div className="border-b border-border/60 bg-primary text-primary-foreground">
-        <div className="mx-auto max-w-7xl px-6 min-h-12 py-2 flex items-center justify-between gap-4 text-xs">
-          <span className="font-serif text-base md:text-lg font-bold tracking-wide leading-tight">{SCHOOL_NAME}</span>
-          <div className="flex items-center gap-3 opacity-90">
+        <div className="mx-auto max-w-7xl px-6 min-h-14 py-2.5 flex items-center justify-between gap-4 text-xs">
+          <span className="font-serif text-lg md:text-xl font-bold tracking-wide leading-tight">{SCHOOL_NAME}</span>
+          <div className="flex items-center gap-3 opacity-95">
             {user && profile ? (
               <>
-                <span className="hidden sm:inline">{greeting}</span>
+                <span className="hidden sm:inline font-semibold text-primary-foreground">{greeting}</span>
                 <span className="opacity-60">|</span>
                 <Link to="/profile" className="hover:underline">개인정보 수정</Link>
                 <span className="opacity-60">|</span>
@@ -131,22 +133,59 @@ export function SiteHeader() {
           </div>
         </Link>
 
-        {/* Right cluster: welcome + bell + profile menu */}
+        {/* Right cluster: bell + profile menu */}
         <div className="flex items-center gap-2 shrink-0">
           {user && profile ? (
             <>
-              <Link
-                to="/inquiries"
-                className="relative inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-secondary text-muted-foreground hover:text-primary transition-colors"
-                aria-label="메시지함"
-              >
-                <Bell className="h-4 w-4" />
-                {unread > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold grid place-items-center">
-                    {unread > 99 ? "99+" : unread}
-                  </span>
-                )}
-              </Link>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button
+                    className="relative inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-secondary text-muted-foreground hover:text-primary transition-colors"
+                    aria-label="알림"
+                  >
+                    <Bell className="h-4 w-4" />
+                    {unread > 0 && (
+                      <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold grid place-items-center">
+                        {unread > 99 ? "99+" : unread}
+                      </span>
+                    )}
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-80 max-h-[480px] overflow-auto">
+                  <div className="flex items-center justify-between px-2 py-1.5">
+                    <DropdownMenuLabel className="p-0">알림 ({unread} 미확인)</DropdownMenuLabel>
+                    {unread > 0 && (
+                      <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={onMarkAll}>
+                        <CheckCheck className="h-3.5 w-3.5 mr-1" /> 모두 읽음
+                      </Button>
+                    )}
+                  </div>
+                  <DropdownMenuSeparator />
+                  {notifications.length === 0 ? (
+                    <div className="p-6 text-center text-sm text-muted-foreground">새 알림이 없습니다.</div>
+                  ) : (
+                    notifications.map((n) => (
+                      <button
+                        key={n.id}
+                        onClick={() => onNotifClick(n)}
+                        className={cn(
+                          "w-full text-left px-3 py-2 hover:bg-secondary border-l-2 transition-colors",
+                          n.read_at ? "border-transparent" : "border-accent bg-accent/5",
+                        )}
+                      >
+                        <div className="flex items-center gap-1.5">
+                          <span className={cn("text-[10px] uppercase font-bold tracking-wider", n.read_at ? "text-muted-foreground" : "text-accent")}>
+                            {labelOfKind(n.kind)}
+                          </span>
+                          <span className="text-[10px] text-muted-foreground ml-auto">{formatPostDate(n.created_at)}</span>
+                        </div>
+                        <div className={cn("text-sm mt-0.5", n.read_at ? "" : "font-semibold")}>{n.title}</div>
+                        {n.body && <div className="text-xs text-muted-foreground line-clamp-1">{n.body}</div>}
+                      </button>
+                    ))
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -171,12 +210,7 @@ export function SiteHeader() {
                     <UserCog className="h-4 w-4 mr-2" /> 회원 정보 변경
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate({ to: "/inquiries" })}>
-                    <MessageSquare className="h-4 w-4 mr-2" /> 메시지함
-                    {unread > 0 && (
-                      <span className="ml-auto text-[10px] font-bold bg-destructive text-destructive-foreground rounded-full px-1.5 py-0.5">
-                        {unread}
-                      </span>
-                    )}
+                    <MessageSquare className="h-4 w-4 mr-2" /> 1:1 문의함
                   </DropdownMenuItem>
                   {profile.role === "admin" && (
                     <DropdownMenuItem onClick={() => navigate({ to: "/admin" })}>
@@ -222,4 +256,15 @@ export function SiteHeader() {
       </nav>
     </header>
   );
+}
+
+function labelOfKind(kind: string): string {
+  switch (kind) {
+    case "notice": return "공지";
+    case "course_notice": return "강의공지";
+    case "assignment": return "과제";
+    case "recovery_request": return "복구신청";
+    case "temp_password": return "임시 비밀번호";
+    default: return kind;
+  }
 }

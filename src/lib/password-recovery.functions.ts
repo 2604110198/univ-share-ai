@@ -4,13 +4,6 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const STUDENT_DOMAIN = "students.campus.local";
 
-function genTempPassword(): string {
-  const chars = "abcdefghjkmnpqrstuvwxyz23456789";
-  let pw = "";
-  for (let i = 0; i < 8; i++) pw += chars[Math.floor(Math.random() * chars.length)];
-  return pw + "!";
-}
-
 /** Create a recovery request that the admin will fulfill. */
 export const requestPasswordRecovery = createServerFn({ method: "POST" })
   .inputValidator((data: { studentId?: string; email?: string }) => data)
@@ -46,24 +39,26 @@ export const requestPasswordRecovery = createServerFn({ method: "POST" })
     return { ok: true, alreadyPending: false as const };
   });
 
-/** Admin issues a temp password for a recovery request. */
+/** Admin issues a temp password (manually chosen) for a recovery request. */
 export const issueTempPasswordForRequest = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { requestId: string }) => data)
+  .inputValidator((data: { requestId: string; tempPassword: string }) => data)
   .handler(async ({ data, context }) => {
     // Verify caller is admin
     const { data: roleRow } = await supabaseAdmin
       .from("user_roles").select("role").eq("user_id", context.userId).eq("role", "admin").maybeSingle();
     if (!roleRow) throw new Error("관리자 권한이 필요합니다.");
 
+    const tempPw = data.tempPassword.trim();
+    if (tempPw.length < 6) throw new Error("임시 비밀번호는 6자 이상이어야 합니다.");
+
     const { data: req } = await supabaseAdmin
       .from("password_recovery_requests")
-      .select("id, user_id, status")
+      .select("id, user_id, full_name, identifier")
       .eq("id", data.requestId)
       .maybeSingle();
     if (!req) throw new Error("신청을 찾을 수 없습니다.");
 
-    const tempPw = genTempPassword();
     const { error: uErr } = await supabaseAdmin.auth.admin.updateUserById(req.user_id, { password: tempPw });
     if (uErr) throw new Error(uErr.message);
 
@@ -71,6 +66,15 @@ export const issueTempPasswordForRequest = createServerFn({ method: "POST" })
       .from("password_recovery_requests")
       .update({ status: "completed", temp_password: tempPw, completed_at: new Date().toISOString() })
       .eq("id", req.id);
+
+    // Notify the user they have a temp password
+    await supabaseAdmin.from("notifications").insert({
+      user_id: req.user_id,
+      kind: "temp_password",
+      title: "임시 비밀번호가 발급되었습니다",
+      body: "로그인 후 즉시 새 비밀번호로 변경해 주세요.",
+      link: "/profile",
+    });
 
     return { tempPassword: tempPw };
   });

@@ -25,6 +25,7 @@ import { Route as PostNewRouteImport } from './routes/post.new'
 import { Route as PostPostIdRouteImport } from './routes/post.$postId'
 import { Route as InquiriesThreadIdRouteImport } from './routes/inquiries.$threadId'
 import { Route as GalleryPostIdRouteImport } from './routes/gallery.$postId'
+import { Route as CourseCourseIdRouteImport } from './routes/course.$courseId'
 import { Route as AssignmentsCourseIdRouteImport } from './routes/assignments.$courseId'
 
 const SignupRoute = SignupRouteImport.update({
@@ -107,6 +108,11 @@ const GalleryPostIdRoute = GalleryPostIdRouteImport.update({
   path: '/$postId',
   getParentRoute: () => GalleryRoute,
 } as any)
+const CourseCourseIdRoute = CourseCourseIdRouteImport.update({
+  id: '/course/$courseId',
+  path: '/course/$courseId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AssignmentsCourseIdRoute = AssignmentsCourseIdRouteImport.update({
   id: '/$courseId',
   path: '/$courseId',
@@ -127,6 +133,7 @@ export interface FileRoutesByFullPath {
   '/profile': typeof ProfileRoute
   '/signup': typeof SignupRoute
   '/assignments/$courseId': typeof AssignmentsCourseIdRoute
+  '/course/$courseId': typeof CourseCourseIdRoute
   '/gallery/$postId': typeof GalleryPostIdRoute
   '/inquiries/$threadId': typeof InquiriesThreadIdRoute
   '/post/$postId': typeof PostPostIdRoute
@@ -146,6 +153,7 @@ export interface FileRoutesByTo {
   '/profile': typeof ProfileRoute
   '/signup': typeof SignupRoute
   '/assignments/$courseId': typeof AssignmentsCourseIdRoute
+  '/course/$courseId': typeof CourseCourseIdRoute
   '/gallery/$postId': typeof GalleryPostIdRoute
   '/inquiries/$threadId': typeof InquiriesThreadIdRoute
   '/post/$postId': typeof PostPostIdRoute
@@ -166,6 +174,7 @@ export interface FileRoutesById {
   '/profile': typeof ProfileRoute
   '/signup': typeof SignupRoute
   '/assignments/$courseId': typeof AssignmentsCourseIdRoute
+  '/course/$courseId': typeof CourseCourseIdRoute
   '/gallery/$postId': typeof GalleryPostIdRoute
   '/inquiries/$threadId': typeof InquiriesThreadIdRoute
   '/post/$postId': typeof PostPostIdRoute
@@ -187,6 +196,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/signup'
     | '/assignments/$courseId'
+    | '/course/$courseId'
     | '/gallery/$postId'
     | '/inquiries/$threadId'
     | '/post/$postId'
@@ -206,6 +216,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/signup'
     | '/assignments/$courseId'
+    | '/course/$courseId'
     | '/gallery/$postId'
     | '/inquiries/$threadId'
     | '/post/$postId'
@@ -225,6 +236,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/signup'
     | '/assignments/$courseId'
+    | '/course/$courseId'
     | '/gallery/$postId'
     | '/inquiries/$threadId'
     | '/post/$postId'
@@ -244,6 +256,7 @@ export interface RootRouteChildren {
   NoticesRoute: typeof NoticesRoute
   ProfileRoute: typeof ProfileRoute
   SignupRoute: typeof SignupRoute
+  CourseCourseIdRoute: typeof CourseCourseIdRoute
   PostPostIdRoute: typeof PostPostIdRoute
   PostNewRoute: typeof PostNewRoute
 }
@@ -362,6 +375,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GalleryPostIdRouteImport
       parentRoute: typeof GalleryRoute
     }
+    '/course/$courseId': {
+      id: '/course/$courseId'
+      path: '/course/$courseId'
+      fullPath: '/course/$courseId'
+      preLoaderRoute: typeof CourseCourseIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/assignments/$courseId': {
       id: '/assignments/$courseId'
       path: '/$courseId'
@@ -420,18 +440,10 @@ const rootRouteChildren: RootRouteChildren = {
   NoticesRoute: NoticesRoute,
   ProfileRoute: ProfileRoute,
   SignupRoute: SignupRoute,
+  CourseCourseIdRoute: CourseCourseIdRoute,
   PostPostIdRoute: PostPostIdRoute,
   PostNewRoute: PostNewRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}

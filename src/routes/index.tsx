@@ -108,7 +108,7 @@ function Index() {
                 {SCHOOL_NAME}
               </div>
               {greeting && (
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/20 border border-accent/40 text-accent-foreground/90 text-sm font-medium mb-6">
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/95 border border-accent text-primary text-sm font-bold shadow-paper mb-6">
                   <Sparkles className="h-4 w-4 text-accent" />
                   {greeting}
                 </div>

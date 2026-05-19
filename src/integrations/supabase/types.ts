@@ -101,6 +101,42 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          kind: string
+          link: string | null
+          post_id: string | null
+          read_at: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          kind: string
+          link?: string | null
+          post_id?: string | null
+          read_at?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          link?: string | null
+          post_id?: string | null
+          read_at?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       password_hints: {
         Row: {
           ciphertext: string
@@ -241,6 +277,7 @@ export type Database = {
           id: string
           inquiry_target_professor_id: string | null
           is_pinned: boolean
+          notify_audience: string
           parent_post_id: string | null
           title: string
           updated_at: string
@@ -258,6 +295,7 @@ export type Database = {
           id?: string
           inquiry_target_professor_id?: string | null
           is_pinned?: boolean
+          notify_audience?: string
           parent_post_id?: string | null
           title: string
           updated_at?: string
@@ -275,6 +313,7 @@ export type Database = {
           id?: string
           inquiry_target_professor_id?: string | null
           is_pinned?: boolean
+          notify_audience?: string
           parent_post_id?: string | null
           title?: string
           updated_at?: string
@@ -299,6 +338,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          can_pin: boolean
           created_at: string
           email: string
           full_name: string
@@ -307,6 +347,7 @@ export type Database = {
           student_id: string | null
         }
         Insert: {
+          can_pin?: boolean
           created_at?: string
           email: string
           full_name: string
@@ -315,6 +356,7 @@ export type Database = {
           student_id?: string | null
         }
         Update: {
+          can_pin?: boolean
           created_at?: string
           email?: string
           full_name?: string
