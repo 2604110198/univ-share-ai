@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
 import { ArrowLeft, Paperclip, FileEdit } from "lucide-react";
 import { uploadAttachments, uploadGalleryImages } from "@/lib/attachments";
@@ -33,6 +34,7 @@ export const Route = createFileRoute("/post/new")({
 
 interface Course { id: string; name: string; professor_id: string | null }
 interface Prof { id: string; full_name: string }
+type NotifyAudience = "none" | "all" | "students";
 
 function NewPostPage() {
   const search = Route.useSearch();
@@ -49,6 +51,8 @@ function NewPostPage() {
   const [isPinned, setIsPinned] = useState(false);
   const [targetProf, setTargetProf] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+  const [notifyAudience, setNotifyAudience] = useState<NotifyAudience>("none");
+  const [canPin, setCanPin] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const [courses, setCourses] = useState<Course[]>([]);
@@ -57,9 +61,9 @@ function NewPostPage() {
   useEffect(() => { if (!loading && !user) navigate({ to: "/login" }); }, [loading, user, navigate]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || !profile) return;
     (async () => {
-      if (category === "material" || category === "assignment") {
+      if (category === "material" || category === "assignment" || category === "notice") {
         const { data } = await supabase.from("courses").select("id, name, professor_id").order("name");
         setCourses((data ?? []) as Course[]);
       }
@@ -67,8 +71,17 @@ function NewPostPage() {
         const { data } = await supabase.from("profiles").select("id, full_name").eq("role", "professor");
         setProfs((data ?? []) as Prof[]);
       }
+      // Check pin permission
+      if (profile.role === "admin") {
+        setCanPin(true);
+      } else if (profile.role === "professor") {
+        const { data: me } = await supabase.from("profiles").select("can_pin").eq("id", profile.id).maybeSingle();
+        setCanPin(Boolean(me?.can_pin));
+      } else {
+        setCanPin(false);
+      }
     })();
-  }, [user, category]);
+  }, [user, profile, category]);
 
   if (loading) return <div className="min-h-screen grid place-items-center text-muted-foreground">불러오는 중...</div>;
   if (!user || !profile) return null;
@@ -93,6 +106,9 @@ function NewPostPage() {
     );
   }
 
+  const showCourseSelect = category === "material" || category === "assignment" || category === "notice";
+  const showNotify = category === "notice" || category === "assignment";
+
   const submit = async () => {
     if (!user) return;
     if (!title.trim()) { toast.error("제목을 입력하세요"); return; }
@@ -105,10 +121,11 @@ function NewPostPage() {
     const insert: Insert = {
       category, title: title.trim(), content: content.trim() || null,
       author_id: user.id, author_name: profile.full_name, author_role: profile.role,
-      course_id: (category === "material" || category === "assignment") && courseId ? courseId : null,
+      course_id: showCourseSelect && courseId ? courseId : null,
       due_date: category === "assignment" && dueDate ? new Date(dueDate).toISOString() : null,
-      is_pinned: profile.role !== "student" ? isPinned : false,
+      is_pinned: canPin ? isPinned : false,
       inquiry_target_professor_id: category === "inquiry" ? targetProf : null,
+      notify_audience: showNotify ? notifyAudience : "none",
     };
 
     const { data: created, error } = await supabase.from("posts").insert(insert).select("id").single();
@@ -147,11 +164,11 @@ function NewPostPage() {
             <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="제목을 입력하세요" />
           </div>
 
-          {(category === "material" || category === "assignment") && (
+          {showCourseSelect && (
             <div className="space-y-2">
               <Label>강의 {category === "assignment" && <span className="text-destructive">*</span>}</Label>
               <Select value={courseId} onValueChange={setCourseId}>
-                <SelectTrigger><SelectValue placeholder="강의 선택 (선택사항)" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder={category === "notice" ? "전체 학과 공지 (선택사항)" : "강의 선택"} /></SelectTrigger>
                 <SelectContent>
                   {courses.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                 </SelectContent>
@@ -186,14 +203,34 @@ function NewPostPage() {
           </div>
 
           <div className="space-y-2">
-            <Label className="flex items-center gap-1.5"><Paperclip className="h-4 w-4" /> 첨부파일 (최대 500MB)</Label>
+            <Label className="flex items-center gap-1.5"><Paperclip className="h-4 w-4" /> 첨부파일</Label>
             <Input type="file" multiple onChange={(e) => setFiles(Array.from(e.target.files ?? []))} />
             {files.length > 0 && (
               <div className="text-xs text-muted-foreground">{files.length}개 선택됨</div>
             )}
+            {category === "assignment" && (
+              <p className="text-[11px] text-muted-foreground">학생이 다운로드 할 양식 파일을 첨부할 수 있습니다.</p>
+            )}
           </div>
 
-          {profile.role !== "student" && (
+          {showNotify && (
+            <div className="space-y-2 rounded-md border border-border p-3 bg-secondary/30">
+              <Label>알림 대상</Label>
+              <RadioGroup value={notifyAudience} onValueChange={(v) => setNotifyAudience(v as NotifyAudience)} className="space-y-1">
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <RadioGroupItem value="none" /> 알림 보내지 않음
+                </label>
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <RadioGroupItem value="all" /> 모든 회원에게 알림
+                </label>
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <RadioGroupItem value="students" /> 학생에게만 알림
+                </label>
+              </RadioGroup>
+            </div>
+          )}
+
+          {canPin && (
             <div className="flex items-center justify-between rounded-md border border-border p-3">
               <div>
                 <Label className="cursor-pointer">상단 고정</Label>
