@@ -1,83 +1,78 @@
-## 작업 범위
+다음 6가지 영역의 피드백을 순차 구현합니다.
 
-### 1. 메인 페이지 레이아웃 재배치 (`src/routes/index.tsx`)
-- 3컬럼 그리드로 재구성: **좌(학과 갤러리) / 중(주요 기능 6개) / 우(학교 홈페이지)**
-- 학교 홈페이지 링크 변경: `https://www.kopo.ac.kr` → `https://www.kopo.ac.kr/semi/index.do` (반도체융합캠퍼스)
+## 1. 메인 화면 가독성
 
-### 2. 파일 업로드 용량 확대
-- `src/lib/format.ts`의 `MAX_FILE_SIZE` 상수를 현재 500MB → **5GB**로 확대 (강의 영상 보관 목적)
-- 클라이언트 검증 제거에 가깝게 완화. (실제 storage 버킷 한도는 Supabase 플랜에 따름 — 안내 문구 추가)
-- `src/lib/attachments.ts` 에러 메시지도 갱신.
+`src/routes/index.tsx` 및 `src/components/site-header.tsx`:
+- 상단 남색 바의 "한국폴리텍대학교 반도체융합캠퍼스" 텍스트를 `text-lg md:text-xl` 로 키움.
+- 환영 메시지 영역(`greeting` 칩)에 더 진한 배경과 흰색 텍스트(예: `bg-primary-foreground/15 text-white border-white/30 backdrop-blur`)를 적용해 가독성 향상.
 
-### 3. 강의 관리 — 수정 기능
-- `src/routes/admin.tsx`의 강의 목록에 **수정 버튼**(삭제 왼쪽)을 추가.
-- 클릭 시 등록 폼에 기존 값(name, weekday, start/end, classroom, professor, description)을 prefill하고 "수정" 모드로 전환.
-- 저장 시 `UPDATE courses` 실행 후 폼 리셋, 강의실 페이지에 즉시 반영.
+## 2. 강의실 → 강의 상세 페이지
 
-### 4. 로그인 동작 점검
-- `src/routes/login.tsx`의 학생 로그인 흐름 점검:
-  - `studentIdToEmail` 정상 동작 확인 (`{sid}@students.campus.local`)
-  - 성공 후 `auth-context`가 profile을 가져와 메인 진입까지 막힘 없도록 useEffect 의존성 정리.
-- 로그인 직후 navigate가 profile 로드 전 발생하면 `/` 의 로딩 상태가 보일 수 있어, 토스트 후 `window.location.replace("/")` 대신 router navigate 유지하고 `__root` 의 onAuthStateChange invalidate가 작동하는지 확인.
+새 라우트 `src/routes/course.$courseId.tsx`:
+- 강의 목록(`dashboard.tsx`)에서 각 강의 카드를 `Link to="/course/$courseId"` 로 변경.
+- 상세 페이지 구성:
+  - 상단: 해당 과목의 최근 공지사항(category=`notice` AND `course_id`) 1~3개 카드.
+  - 탭/섹션: **자료**(category=`material`, course_id) · **과제**(category=`assignment`, course_id) 목록.
+  - 교수(담당) 또는 관리자에게만 "공지 작성", "자료 작성", "과제 작성" 버튼 노출.
+  - 각 게시글은 작성자 또는 관리자만 수정/삭제(기존 RLS에 부합).
+- `posts` 카테고리 enum에 `notice`가 강의별로도 등록될 수 있도록 RLS 정책의 INSERT 조건 확장(course_id 있는 notice를 담당 교수가 작성 가능하게). 마이그레이션으로 정책 갱신.
 
-### 5. 비밀번호 찾기 — 두 가지 모드로 재설계
+## 3. 과제 게시판 권한
 
-**중요한 제약 (사용자에게 안내):**
-Supabase Auth는 비밀번호를 단방향 해시(bcrypt)로만 저장하므로 "원래 비밀번호의 앞 2자리 + 나머지 \*"를 그대로 보여주는 것은 **기술적으로 불가능**합니다. 어떤 방식으로도 원본을 복원할 수 없습니다.
+`src/routes/assignments.$courseId.tsx`, `src/routes/post.new.tsx`:
+- 학생 화면에서는 과제 작성 버튼을 완전히 렌더링하지 않음(이미 `canWriteAssignment` 가드 있음 — 확인 후 정리).
+- `post.new.tsx`에서 카테고리 `assignment` 진입 시 비교수/비관리자면 즉시 `/assignments` 로 redirect + 토스트.
+- 과제 작성 폼에 마감기한(`due_date`) 입력과 양식 파일 다중 첨부 기능 보강(기존 첨부 로직 재사용).
+- 게시글 상세(`post.$postId.tsx`)에서 첨부파일 다운로드 링크와 수정/삭제 버튼은 작성자/관리자에게만.
 
-대안 — 사용자 의도에 가장 가까운 2단계 흐름으로 구현:
+## 4. 알림 시스템 통합
 
-**(A) 비밀번호 힌트 보기 (즉시)**
-- 회원가입/비밀번호 변경 시점에 비밀번호를 **암호화**(AES-GCM, 서버측 비밀키 사용)해서 `password_hints` 테이블에 별도 저장.
-- 비밀번호 찾기 화면에서 학번/이메일 입력 → 서버 함수가 복호화 후 **앞 2자리 + 나머지 \*** 형식으로 반환.
-- 보안 고지: "이 힌트는 본인 확인용이며 화면 캡처에 주의" 안내 문구 표시.
-- 신규 가입/변경부터 적용되며, 기존 사용자는 힌트가 없으므로 **(B)** 안내.
+`posts` 테이블에 `notify_audience` 컬럼 추가(`none | all | students`, 기본 `none`).
 
-**(B) 복구 신청 (관리자 처리)**
-- "복구 신청" 버튼 → `recovery_requests` 테이블에 학번/이메일·신청시각 insert.
-- 관리자 페이지에 **복구 신청 목록** 섹션 신설. 각 신청에 "임시 비밀번호 발급" 버튼.
-- 발급 시 서버함수가 `auth.admin.updateUserById`로 임시 PW 설정 + 신청 상태 `완료`로 갱신 + 결과(임시 PW)를 **관리자에게만** 표시 → 관리자가 학생에게 통보.
-- 로그인 후 학생은 `/profile` 에서 새 비밀번호로 변경 가능 (기존 기능 활용 + 비밀번호 변경 UI 추가).
-
-### 기술 세부사항
-
-**DB 마이그레이션:**
-```sql
--- 비밀번호 힌트 (암호화 저장)
-CREATE TABLE password_hints (
-  user_id uuid PRIMARY KEY,
-  ciphertext text NOT NULL,
-  iv text NOT NULL,
-  updated_at timestamptz DEFAULT now()
-);
-ALTER TABLE password_hints ENABLE ROW LEVEL SECURITY;
--- 본인만 읽기 / 서비스롤만 쓰기 (RLS: id = auth.uid())
-
--- 복구 신청
-CREATE TABLE password_recovery_requests (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL,
-  requested_at timestamptz DEFAULT now(),
-  status text NOT NULL DEFAULT 'pending', -- pending | completed
-  temp_password_issued_at timestamptz
-);
--- 본인 insert/select, 관리자 전체 관리
+새 테이블 `notifications`:
 ```
+id uuid pk, user_id uuid, post_id uuid, kind text ('notice'|'course_notice'|'recovery_request'), 
+title text, created_at timestamptz, read_at timestamptz null
+```
+RLS: 본인 행만 SELECT/UPDATE, 관리자 ALL.
 
-**Secret 추가 필요:** `PASSWORD_HINT_KEY` (32바이트 base64) — 힌트 암복호화용.
+트리거 `on_post_insert_notify`: notice/course_notice 게시 시 `notify_audience` 에 따라
+- `all` → 모든 profiles
+- `students` → role='student'
+대상으로 notifications 행 fan-out.
 
-**서버 함수:**
-- `storePasswordHint(userId, plain)` — 가입·변경 시 호출 (admin 클라이언트).
-- `getPasswordHint({studentId|email})` — 마스킹된 힌트 반환.
-- `requestPasswordRecovery({studentId|email})` — 신청 행 생성.
-- `issueTempPasswordForRequest(requestId)` — 관리자 전용, 임시 PW 생성.
+비밀번호 복구 신청 시 트리거로 모든 admin 에게 notification 생성.
 
-### 변경 파일
-- 수정: `src/routes/index.tsx`, `src/lib/format.ts`, `src/lib/attachments.ts`, `src/routes/admin.tsx`, `src/routes/login.tsx`, `src/routes/forgot-password.tsx`, `src/routes/profile.tsx`, `src/routes/signup.tsx`.
-- 신규: `src/lib/password-hint.functions.ts`, `src/lib/password-recovery-requests.functions.ts`.
-- 마이그레이션 1건, secret 1건.
+`site-header.tsx`의 종(Bell) 아이콘이 이제 `notifications` 테이블의 미읽음 카운트를 표시하고, 클릭 시 드롭다운에서 항목별 링크(공지/과제/복구신청) 제공. 항목 클릭 시 `read_at` 업데이트.
 
-### 확인 필요
-1. **비밀번호 힌트 저장 방식**: 위의 (A)+(B) 조합으로 진행해도 될까요? 아니면 (B) 복구 신청만 구현할까요?
-2. **PASSWORD_HINT_KEY** secret을 추가해도 될까요? (필요 시 자동 요청)
-3. 파일 업로드 한도를 **5GB**로 설정하면 될까요? (더 크게 원하시면 알려주세요)
+## 5. 공지사항 작성 옵션
+
+`post.new.tsx` 공지/과목공지 작성 시 라디오:
+- "알림 보내지 않음" / "모든 회원" / "학생만"
+
+`notices.tsx` 목록에서 작성자 또는 관리자만 수정/삭제(기존 RLS 유지, UI 버튼 가드).
+
+### 고정 권한
+- `profiles` (또는 `user_roles`) 외에 새 컬럼/플래그 필요 → 가장 단순한 방식으로 `profiles.can_pin boolean default false` 추가.
+- `posts` 의 `is_pinned` UPDATE를 관리자 또는 `can_pin=true` 교수에게만 허용하도록 RLS의 별도 정책 또는 트리거로 enforce.
+- 관리실(`admin.tsx`)에 교수 목록 옆 "고정 권한" 토글 추가.
+
+## 6. 비밀번호 복구 알림 + 관리자 임시 비밀번호 입력
+
+- 4번의 트리거로 복구 신청 → admin notifications 생성 (벨 표시).
+- `admin.tsx` 복구 요청 탭: 기존 자동 생성 대신 관리자가 **직접 임시 비밀번호 입력** UI(텍스트 인풋 + "발급" 버튼). 서버함수 `setTempPassword(userId, tempPassword)` 가 `supabaseAdmin.auth.admin.updateUserById` 호출하고 요청을 `completed` 처리.
+- `profile.tsx` 비밀번호 변경 UX는 기존대로 (임시 비밀번호로 로그인 후 변경 가능).
+
+## 마이그레이션 요약
+1. `ALTER TABLE posts ADD COLUMN notify_audience text DEFAULT 'none' CHECK (notify_audience IN ('none','all','students'));`
+2. `ALTER TABLE profiles ADD COLUMN can_pin boolean DEFAULT false;`
+3. `CREATE TABLE notifications (...)` + RLS.
+4. Posts INSERT/UPDATE 정책 갱신 (강의 담당 교수의 course notice 작성, can_pin 가드).
+5. 트리거: post insert → notifications fan-out, recovery request insert → admin notification.
+
+## 파일 변경 목록
+- 신규: `src/routes/course.$courseId.tsx`, `src/lib/notifications.ts`
+- 수정: `src/routes/index.tsx`, `src/components/site-header.tsx`, `src/routes/dashboard.tsx`, `src/routes/assignments.$courseId.tsx`, `src/routes/post.new.tsx`, `src/routes/post.$postId.tsx`, `src/routes/notices.tsx`, `src/routes/admin.tsx`, `src/lib/password-recovery.functions.ts`
+- 마이그레이션 1개
+
+승인해주시면 마이그레이션부터 진행하겠습니다.
