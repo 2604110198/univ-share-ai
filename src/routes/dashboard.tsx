@@ -1,11 +1,11 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
 import { SiteHeader } from "@/components/site-header";
 import { PageHeader } from "@/components/page-header";
 import { WEEKDAY_LABEL, WEEKDAY_ORDER } from "@/lib/format";
-import { BookOpen, Clock, MapPin, User } from "lucide-react";
+import { BookOpen, Clock, MapPin, User, ChevronRight } from "lucide-react";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({ meta: [{ title: "강의실 — 반도체장비소프트웨어학과" }] }),
@@ -77,14 +77,22 @@ function DashboardPage() {
                       <div className="text-xs text-muted-foreground text-center py-6">강의 없음</div>
                     ) : (
                       dayCourses.map((c) => (
-                        <div key={c.id} className="rounded-md border border-border p-3 bg-background hover:border-accent transition-colors">
-                          <div className="font-bold text-sm mb-1">{c.name}</div>
+                        <Link
+                          key={c.id}
+                          to="/course/$courseId"
+                          params={{ courseId: c.id }}
+                          className="block rounded-md border border-border p-3 bg-background hover:border-accent transition-colors group"
+                        >
+                          <div className="flex items-start justify-between gap-1">
+                            <div className="font-bold text-sm mb-1 group-hover:text-accent">{c.name}</div>
+                            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-accent shrink-0 mt-0.5" />
+                          </div>
                           <div className="text-[11px] text-muted-foreground space-y-0.5">
                             <div className="flex items-center gap-1"><Clock className="h-3 w-3" /> {c.start_time.slice(0, 5)} ~ {c.end_time.slice(0, 5)}</div>
                             {c.classroom && <div className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {c.classroom}</div>}
                             {c.professor_name && <div className="flex items-center gap-1"><User className="h-3 w-3" /> {c.professor_name}</div>}
                           </div>
-                        </div>
+                        </Link>
                       ))
                     )}
                   </div>

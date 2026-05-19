@@ -9,7 +9,7 @@ export async function uploadAttachments(opts: {
   const errors: string[] = [];
   for (const file of opts.files) {
     if (file.size > MAX_FILE_SIZE) {
-      errors.push(`${file.name}: 500MB를 초과합니다`);
+      errors.push(`${file.name}: 파일 크기 한도를 초과합니다`);
       continue;
     }
     const ext = file.name.includes(".") ? file.name.slice(file.name.lastIndexOf(".")) : "";
