@@ -71,15 +71,7 @@ function NewPostPage() {
         const { data } = await supabase.from("profiles").select("id, full_name").eq("role", "professor");
         setProfs((data ?? []) as Prof[]);
       }
-      // Check pin permission
-      if (profile.role === "admin") {
-        setCanPin(true);
-      } else if (profile.role === "professor") {
-        const { data: me } = await supabase.from("profiles").select("can_pin").eq("id", profile.id).maybeSingle();
-        setCanPin(Boolean(me?.can_pin));
-      } else {
-        setCanPin(false);
-      }
+      setCanPin(profile.role === "admin");
     })();
   }, [user, profile, category]);
 
@@ -90,7 +82,7 @@ function NewPostPage() {
   const canPost =
     profile.role === "admin" ||
     (category === "material" && profile.role === "professor") ||
-    (category === "notice" && profile.role === "professor") ||
+    (category === "notice" && (profile.role === "professor" || Boolean(profile.can_write_notice))) ||
     (category === "assignment" && profile.role === "professor") ||
     (category === "gallery" && profile.role === "professor") ||
     category === "inquiry";
