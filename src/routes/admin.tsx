@@ -636,6 +636,9 @@ function RecoveryPanel() {
                 <Button size="sm" onClick={() => issue(r.id)} disabled={busy === r.id}>
                   {busy === r.id ? "발급 중..." : "발급"}
                 </Button>
+                <Button size="sm" variant="outline" onClick={() => markCompleted(r.id)} disabled={busy === r.id}>
+                  <CheckCircle className="h-3.5 w-3.5 mr-1" /> 처리 완료
+                </Button>
               </div>
             </div>
           ))}
@@ -657,6 +660,9 @@ function RecoveryPanel() {
                   </div>
                 )}
               </div>
+              <Button size="sm" variant="outline" onClick={() => archive(r.id)} disabled={busy === r.id}>
+                확인
+              </Button>
             </div>
           ))}
         </div>
