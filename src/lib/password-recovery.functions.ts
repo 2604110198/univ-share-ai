@@ -78,3 +78,37 @@ export const issueTempPasswordForRequest = createServerFn({ method: "POST" })
 
     return { tempPassword: tempPw };
   });
+
+/** Admin manually moves a pending request to completed without issuing a password. */
+export const markRecoveryRequestCompleted = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: { requestId: string }) => data)
+  .handler(async ({ data, context }) => {
+    const { data: roleRow } = await supabaseAdmin
+      .from("user_roles").select("role").eq("user_id", context.userId).eq("role", "admin").maybeSingle();
+    if (!roleRow) throw new Error("관리자 권한이 필요합니다.");
+
+    const { error } = await supabaseAdmin
+      .from("password_recovery_requests")
+      .update({ status: "completed", completed_at: new Date().toISOString() })
+      .eq("id", data.requestId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/** Admin confirms a completed request and removes it from the visible list. */
+export const archiveRecoveryRequest = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: { requestId: string }) => data)
+  .handler(async ({ data, context }) => {
+    const { data: roleRow } = await supabaseAdmin
+      .from("user_roles").select("role").eq("user_id", context.userId).eq("role", "admin").maybeSingle();
+    if (!roleRow) throw new Error("관리자 권한이 필요합니다.");
+
+    const { error } = await supabaseAdmin
+      .from("password_recovery_requests")
+      .update({ status: "archived", archived_at: new Date().toISOString() })
+      .eq("id", data.requestId);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
