@@ -10,12 +10,12 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Trash2, UserCog, GraduationCap, Users, Settings, BookOpen, Pencil, KeyRound, Copy } from "lucide-react";
+import { Trash2, UserCog, GraduationCap, Users, Settings, BookOpen, Pencil, KeyRound, Copy, CheckCircle } from "lucide-react";
 import { WEEKDAY_LABEL, WEEKDAY_ORDER } from "@/lib/format";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ROLE_LABEL, formatDate } from "@/lib/format";
 import { validatePassword } from "@/lib/credentials";
-import { issueTempPasswordForRequest } from "@/lib/password-recovery.functions";
+import { archiveRecoveryRequest, issueTempPasswordForRequest, markRecoveryRequestCompleted } from "@/lib/password-recovery.functions";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "관리자 — Campus Drive" }] }),
@@ -24,7 +24,7 @@ export const Route = createFileRoute("/admin")({
 
 interface AllowedStudent { id: string; student_id: string; student_name: string | null; note: string | null; created_at: string }
 interface AllowedProf { id: string; email: string; professor_name: string | null; note: string | null; created_at: string }
-interface ProfileRow { id: string; full_name: string; email: string; student_id: string | null; role: string; created_at: string; can_pin?: boolean }
+interface ProfileRow { id: string; full_name: string; email: string; student_id: string | null; role: string; created_at: string; can_write_notice?: boolean }
 
 function AdminPage() {
   const { user, profile, loading } = useAuth();
