@@ -351,7 +351,7 @@ function UsersPanel() {
                 </td>
                 <td className="p-3">
                   {r.role === "admin" || r.role === "professor" ? (
-                    <span className="text-xs text-muted-foreground">관리자 (자동)</span>
+                    <span className="text-xs text-muted-foreground">기본 권한</span>
                   ) : r.role === "student" ? (
                     <button
                       onClick={() => toggleNoticeWrite(r.id, !r.can_write_notice)}
@@ -563,11 +563,14 @@ function RecoveryPanel() {
   const [busy, setBusy] = useState<string | null>(null);
   const [tempPwInputs, setTempPwInputs] = useState<Record<string, string>>({});
   const issueFn = useServerFn(issueTempPasswordForRequest);
+  const markCompletedFn = useServerFn(markRecoveryRequestCompleted);
+  const archiveFn = useServerFn(archiveRecoveryRequest);
 
   const load = useCallback(async () => {
     const { data } = await supabase
       .from("password_recovery_requests")
       .select("*")
+      .neq("status", "archived")
       .order("requested_at", { ascending: false });
     setRows((data ?? []) as RecoveryRow[]);
   }, []);
@@ -592,6 +595,20 @@ function RecoveryPanel() {
 
   const copy = async (pw: string) => {
     try { await navigator.clipboard.writeText(pw); toast.success("복사되었습니다"); } catch { toast.error("복사 실패"); }
+  };
+
+  const markCompleted = async (id: string) => {
+    setBusy(id);
+    try { await markCompletedFn({ data: { requestId: id } }); toast.success("처리 완료로 이동했습니다"); await load(); }
+    catch (err) { toast.error("처리 실패", { description: err instanceof Error ? err.message : "오류" }); }
+    finally { setBusy(null); }
+  };
+
+  const archive = async (id: string) => {
+    setBusy(id);
+    try { await archiveFn({ data: { requestId: id } }); toast.success("확인되어 목록에서 제거되었습니다"); await load(); }
+    catch (err) { toast.error("확인 실패", { description: err instanceof Error ? err.message : "오류" }); }
+    finally { setBusy(null); }
   };
 
   const pending = rows.filter((r) => r.status === "pending");
