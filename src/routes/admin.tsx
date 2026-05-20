@@ -390,6 +390,7 @@ interface CourseRow {
   start_time: string; end_time: string; classroom: string | null;
   professor_id: string | null; professor_name: string | null;
   description?: string | null;
+  textbook_title?: string | null; textbook_info?: string | null;
 }
 
 function CoursesPanel() {
@@ -403,6 +404,8 @@ function CoursesPanel() {
   const [classroom, setClassroom] = useState("");
   const [profId, setProfId] = useState("");
   const [description, setDescription] = useState("");
+  const [textbookTitle, setTextbookTitle] = useState("");
+  const [textbookInfo, setTextbookInfo] = useState("");
 
   const load = useCallback(async () => {
     const { data } = await supabase.from("courses").select("*").order("weekday").order("start_time");
@@ -415,7 +418,7 @@ function CoursesPanel() {
   const resetForm = () => {
     setEditingId(null);
     setName(""); setWeekday("mon"); setStartTime("09:00"); setEndTime("10:30");
-    setClassroom(""); setProfId(""); setDescription("");
+    setClassroom(""); setProfId(""); setDescription(""); setTextbookTitle(""); setTextbookInfo("");
   };
 
   const startEdit = (r: CourseRow) => {
@@ -427,6 +430,8 @@ function CoursesPanel() {
     setClassroom(r.classroom ?? "");
     setProfId(r.professor_id ?? "");
     setDescription(r.description ?? "");
+    setTextbookTitle(r.textbook_title ?? "");
+    setTextbookInfo(r.textbook_info ?? "");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -442,6 +447,8 @@ function CoursesPanel() {
       professor_id: profId || null,
       professor_name: prof?.full_name ?? null,
       description: description.trim() || null,
+      textbook_title: textbookTitle.trim() || null,
+      textbook_info: textbookInfo.trim() || null,
     };
     if (editingId) {
       const { error } = await supabase.from("courses").update(payload).eq("id", editingId);
@@ -500,6 +507,14 @@ function CoursesPanel() {
           <div className="space-y-2">
             <Label>설명 (선택)</Label>
             <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="강의 설명" />
+          </div>
+          <div className="space-y-2">
+            <Label>교재명 (선택)</Label>
+            <Input value={textbookTitle} onChange={(e) => setTextbookTitle(e.target.value)} placeholder="예: 반도체 공정 기초" />
+          </div>
+          <div className="space-y-2">
+            <Label>교재 정보 (선택)</Label>
+            <Input value={textbookInfo} onChange={(e) => setTextbookInfo(e.target.value)} placeholder="출판사, 저자, ISBN 등" />
           </div>
           <div className="flex gap-2">
             <Button onClick={save} className="flex-1">{editingId ? "수정 저장" : "등록"}</Button>
