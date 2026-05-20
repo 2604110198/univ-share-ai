@@ -314,10 +314,10 @@ function UsersPanel() {
   }, []);
   useEffect(() => { load(); }, [load]);
 
-  const togglePin = async (id: string, next: boolean) => {
-    const { error } = await supabase.from("profiles").update({ can_pin: next }).eq("id", id);
+  const toggleNoticeWrite = async (id: string, next: boolean) => {
+    const { error } = await supabase.from("profiles").update({ can_write_notice: next }).eq("id", id);
     if (error) { toast.error("변경 실패", { description: error.message }); return; }
-    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, can_pin: next } : r)));
+    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, can_write_notice: next } : r)));
   };
 
   return (
@@ -329,7 +329,7 @@ function UsersPanel() {
               <th className="text-left p-3 font-medium">이름</th>
               <th className="text-left p-3 font-medium">학번 / 이메일</th>
               <th className="text-left p-3 font-medium">역할</th>
-              <th className="text-left p-3 font-medium">공지 고정 권한</th>
+              <th className="text-left p-3 font-medium">공지 작성 권한</th>
               <th className="text-left p-3 font-medium">가입일</th>
             </tr>
           </thead>
@@ -350,14 +350,14 @@ function UsersPanel() {
                   </Badge>
                 </td>
                 <td className="p-3">
-                  {r.role === "admin" ? (
+                  {r.role === "admin" || r.role === "professor" ? (
                     <span className="text-xs text-muted-foreground">관리자 (자동)</span>
-                  ) : r.role === "professor" ? (
+                  ) : r.role === "student" ? (
                     <button
-                      onClick={() => togglePin(r.id, !r.can_pin)}
-                      className={`text-[11px] px-2 py-1 rounded border ${r.can_pin ? "bg-accent/20 border-accent/40 text-accent-foreground" : "border-border text-muted-foreground hover:bg-secondary"}`}
+                      onClick={() => toggleNoticeWrite(r.id, !r.can_write_notice)}
+                      className={`text-[11px] px-2 py-1 rounded border ${r.can_write_notice ? "bg-accent/20 border-accent/40 text-accent-foreground" : "border-border text-muted-foreground hover:bg-secondary"}`}
                     >
-                      {r.can_pin ? "권한 있음 (해제)" : "권한 부여"}
+                      {r.can_write_notice ? "작성 가능 (해제)" : "작성 권한 부여"}
                     </button>
                   ) : (
                     <span className="text-xs text-muted-foreground">—</span>
