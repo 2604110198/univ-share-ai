@@ -73,6 +73,8 @@ export type Database = {
           professor_id: string | null
           professor_name: string | null
           start_time: string
+          textbook_info: string | null
+          textbook_title: string | null
           weekday: Database["public"]["Enums"]["weekday"]
         }
         Insert: {
@@ -85,6 +87,8 @@ export type Database = {
           professor_id?: string | null
           professor_name?: string | null
           start_time: string
+          textbook_info?: string | null
+          textbook_title?: string | null
           weekday: Database["public"]["Enums"]["weekday"]
         }
         Update: {
@@ -97,6 +101,8 @@ export type Database = {
           professor_id?: string | null
           professor_name?: string | null
           start_time?: string
+          textbook_info?: string | null
+          textbook_title?: string | null
           weekday?: Database["public"]["Enums"]["weekday"]
         }
         Relationships: []
@@ -160,6 +166,7 @@ export type Database = {
       }
       password_recovery_requests: {
         Row: {
+          archived_at: string | null
           completed_at: string | null
           full_name: string | null
           id: string
@@ -171,6 +178,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          archived_at?: string | null
           completed_at?: string | null
           full_name?: string | null
           id?: string
@@ -182,6 +190,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          archived_at?: string | null
           completed_at?: string | null
           full_name?: string | null
           id?: string
@@ -234,6 +243,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      post_comments: {
+        Row: {
+          author_id: string
+          author_name: string
+          author_role: Database["public"]["Enums"]["app_role"]
+          content: string
+          created_at: string
+          id: string
+          is_secret: boolean
+          post_id: string
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          author_name: string
+          author_role: Database["public"]["Enums"]["app_role"]
+          content: string
+          created_at?: string
+          id?: string
+          is_secret?: boolean
+          post_id: string
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          author_name?: string
+          author_role?: Database["public"]["Enums"]["app_role"]
+          content?: string
+          created_at?: string
+          id?: string
+          is_secret?: boolean
+          post_id?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       post_reads: {
         Row: {
@@ -339,6 +384,7 @@ export type Database = {
       profiles: {
         Row: {
           can_pin: boolean
+          can_write_notice: boolean
           created_at: string
           email: string
           full_name: string
@@ -348,6 +394,7 @@ export type Database = {
         }
         Insert: {
           can_pin?: boolean
+          can_write_notice?: boolean
           created_at?: string
           email: string
           full_name: string
@@ -357,6 +404,7 @@ export type Database = {
         }
         Update: {
           can_pin?: boolean
+          can_write_notice?: boolean
           created_at?: string
           email?: string
           full_name?: string
@@ -412,6 +460,7 @@ export type Database = {
     Functions: {
       admin_exists: { Args: never; Returns: boolean }
       bootstrap_admin: { Args: never; Returns: undefined }
+      can_view_post_comment: { Args: { _comment_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -420,6 +469,10 @@ export type Database = {
         Returns: boolean
       }
       increment_post_view: { Args: { _post_id: string }; Returns: undefined }
+      is_course_professor: {
+        Args: { _course_id: string; _user_id: string }
+        Returns: boolean
+      }
       update_my_profile: { Args: { _full_name: string }; Returns: undefined }
     }
     Enums: {
