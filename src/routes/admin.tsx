@@ -10,12 +10,12 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Trash2, UserCog, GraduationCap, Users, Settings, BookOpen, Pencil, KeyRound, Copy } from "lucide-react";
+import { Trash2, UserCog, GraduationCap, Users, Settings, BookOpen, Pencil, KeyRound, Copy, CheckCircle } from "lucide-react";
 import { WEEKDAY_LABEL, WEEKDAY_ORDER } from "@/lib/format";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ROLE_LABEL, formatDate } from "@/lib/format";
 import { validatePassword } from "@/lib/credentials";
-import { issueTempPasswordForRequest } from "@/lib/password-recovery.functions";
+import { archiveRecoveryRequest, issueTempPasswordForRequest, markRecoveryRequestCompleted } from "@/lib/password-recovery.functions";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({ meta: [{ title: "관리자 — Campus Drive" }] }),
@@ -24,7 +24,7 @@ export const Route = createFileRoute("/admin")({
 
 interface AllowedStudent { id: string; student_id: string; student_name: string | null; note: string | null; created_at: string }
 interface AllowedProf { id: string; email: string; professor_name: string | null; note: string | null; created_at: string }
-interface ProfileRow { id: string; full_name: string; email: string; student_id: string | null; role: string; created_at: string; can_pin?: boolean }
+interface ProfileRow { id: string; full_name: string; email: string; student_id: string | null; role: string; created_at: string; can_write_notice?: boolean }
 
 function AdminPage() {
   const { user, profile, loading } = useAuth();
@@ -314,10 +314,10 @@ function UsersPanel() {
   }, []);
   useEffect(() => { load(); }, [load]);
 
-  const togglePin = async (id: string, next: boolean) => {
-    const { error } = await supabase.from("profiles").update({ can_pin: next }).eq("id", id);
+  const toggleNoticeWrite = async (id: string, next: boolean) => {
+    const { error } = await supabase.from("profiles").update({ can_write_notice: next }).eq("id", id);
     if (error) { toast.error("변경 실패", { description: error.message }); return; }
-    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, can_pin: next } : r)));
+    setRows((prev) => prev.map((r) => (r.id === id ? { ...r, can_write_notice: next } : r)));
   };
 
   return (
@@ -329,7 +329,7 @@ function UsersPanel() {
               <th className="text-left p-3 font-medium">이름</th>
               <th className="text-left p-3 font-medium">학번 / 이메일</th>
               <th className="text-left p-3 font-medium">역할</th>
-              <th className="text-left p-3 font-medium">공지 고정 권한</th>
+              <th className="text-left p-3 font-medium">공지 작성 권한</th>
               <th className="text-left p-3 font-medium">가입일</th>
             </tr>
           </thead>
@@ -350,14 +350,14 @@ function UsersPanel() {
                   </Badge>
                 </td>
                 <td className="p-3">
-                  {r.role === "admin" ? (
-                    <span className="text-xs text-muted-foreground">관리자 (자동)</span>
-                  ) : r.role === "professor" ? (
+                  {r.role === "admin" || r.role === "professor" ? (
+                    <span className="text-xs text-muted-foreground">기본 권한</span>
+                  ) : r.role === "student" ? (
                     <button
-                      onClick={() => togglePin(r.id, !r.can_pin)}
-                      className={`text-[11px] px-2 py-1 rounded border ${r.can_pin ? "bg-accent/20 border-accent/40 text-accent-foreground" : "border-border text-muted-foreground hover:bg-secondary"}`}
+                      onClick={() => toggleNoticeWrite(r.id, !r.can_write_notice)}
+                      className={`text-[11px] px-2 py-1 rounded border ${r.can_write_notice ? "bg-accent/20 border-accent/40 text-accent-foreground" : "border-border text-muted-foreground hover:bg-secondary"}`}
                     >
-                      {r.can_pin ? "권한 있음 (해제)" : "권한 부여"}
+                      {r.can_write_notice ? "작성 가능 (해제)" : "작성 권한 부여"}
                     </button>
                   ) : (
                     <span className="text-xs text-muted-foreground">—</span>
@@ -390,6 +390,7 @@ interface CourseRow {
   start_time: string; end_time: string; classroom: string | null;
   professor_id: string | null; professor_name: string | null;
   description?: string | null;
+  textbook_title?: string | null; textbook_info?: string | null;
 }
 
 function CoursesPanel() {
@@ -403,6 +404,8 @@ function CoursesPanel() {
   const [classroom, setClassroom] = useState("");
   const [profId, setProfId] = useState("");
   const [description, setDescription] = useState("");
+  const [textbookTitle, setTextbookTitle] = useState("");
+  const [textbookInfo, setTextbookInfo] = useState("");
 
   const load = useCallback(async () => {
     const { data } = await supabase.from("courses").select("*").order("weekday").order("start_time");
@@ -415,7 +418,7 @@ function CoursesPanel() {
   const resetForm = () => {
     setEditingId(null);
     setName(""); setWeekday("mon"); setStartTime("09:00"); setEndTime("10:30");
-    setClassroom(""); setProfId(""); setDescription("");
+    setClassroom(""); setProfId(""); setDescription(""); setTextbookTitle(""); setTextbookInfo("");
   };
 
   const startEdit = (r: CourseRow) => {
@@ -427,6 +430,8 @@ function CoursesPanel() {
     setClassroom(r.classroom ?? "");
     setProfId(r.professor_id ?? "");
     setDescription(r.description ?? "");
+    setTextbookTitle(r.textbook_title ?? "");
+    setTextbookInfo(r.textbook_info ?? "");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -442,6 +447,8 @@ function CoursesPanel() {
       professor_id: profId || null,
       professor_name: prof?.full_name ?? null,
       description: description.trim() || null,
+      textbook_title: textbookTitle.trim() || null,
+      textbook_info: textbookInfo.trim() || null,
     };
     if (editingId) {
       const { error } = await supabase.from("courses").update(payload).eq("id", editingId);
@@ -501,6 +508,14 @@ function CoursesPanel() {
             <Label>설명 (선택)</Label>
             <Input value={description} onChange={(e) => setDescription(e.target.value)} placeholder="강의 설명" />
           </div>
+          <div className="space-y-2">
+            <Label>교재명 (선택)</Label>
+            <Input value={textbookTitle} onChange={(e) => setTextbookTitle(e.target.value)} placeholder="예: 반도체 공정 기초" />
+          </div>
+          <div className="space-y-2">
+            <Label>교재 정보 (선택)</Label>
+            <Input value={textbookInfo} onChange={(e) => setTextbookInfo(e.target.value)} placeholder="출판사, 저자, ISBN 등" />
+          </div>
           <div className="flex gap-2">
             <Button onClick={save} className="flex-1">{editingId ? "수정 저장" : "등록"}</Button>
             {editingId && <Button variant="outline" onClick={resetForm}>취소</Button>}
@@ -548,11 +563,14 @@ function RecoveryPanel() {
   const [busy, setBusy] = useState<string | null>(null);
   const [tempPwInputs, setTempPwInputs] = useState<Record<string, string>>({});
   const issueFn = useServerFn(issueTempPasswordForRequest);
+  const markCompletedFn = useServerFn(markRecoveryRequestCompleted);
+  const archiveFn = useServerFn(archiveRecoveryRequest);
 
   const load = useCallback(async () => {
     const { data } = await supabase
       .from("password_recovery_requests")
       .select("*")
+      .neq("status", "archived")
       .order("requested_at", { ascending: false });
     setRows((data ?? []) as RecoveryRow[]);
   }, []);
@@ -577,6 +595,20 @@ function RecoveryPanel() {
 
   const copy = async (pw: string) => {
     try { await navigator.clipboard.writeText(pw); toast.success("복사되었습니다"); } catch { toast.error("복사 실패"); }
+  };
+
+  const markCompleted = async (id: string) => {
+    setBusy(id);
+    try { await markCompletedFn({ data: { requestId: id } }); toast.success("처리 완료로 이동했습니다"); await load(); }
+    catch (err) { toast.error("처리 실패", { description: err instanceof Error ? err.message : "오류" }); }
+    finally { setBusy(null); }
+  };
+
+  const archive = async (id: string) => {
+    setBusy(id);
+    try { await archiveFn({ data: { requestId: id } }); toast.success("확인되어 목록에서 제거되었습니다"); await load(); }
+    catch (err) { toast.error("확인 실패", { description: err instanceof Error ? err.message : "오류" }); }
+    finally { setBusy(null); }
   };
 
   const pending = rows.filter((r) => r.status === "pending");
@@ -604,6 +636,9 @@ function RecoveryPanel() {
                 <Button size="sm" onClick={() => issue(r.id)} disabled={busy === r.id}>
                   {busy === r.id ? "발급 중..." : "발급"}
                 </Button>
+                <Button size="sm" variant="outline" onClick={() => markCompleted(r.id)} disabled={busy === r.id}>
+                  <CheckCircle className="h-3.5 w-3.5 mr-1" /> 처리 완료
+                </Button>
               </div>
             </div>
           ))}
@@ -625,6 +660,9 @@ function RecoveryPanel() {
                   </div>
                 )}
               </div>
+              <Button size="sm" variant="outline" onClick={() => archive(r.id)} disabled={busy === r.id}>
+                확인
+              </Button>
             </div>
           ))}
         </div>

@@ -25,6 +25,8 @@ interface Course {
   professor_id: string | null;
   professor_name: string | null;
   description: string | null;
+  textbook_title: string | null;
+  textbook_info: string | null;
 }
 
 interface NoticeItem {
@@ -136,6 +138,25 @@ function CoursePage() {
                       <span className="text-xs text-muted-foreground shrink-0 ml-3">{formatPostDate(n.created_at)}</span>
                     </Link>
                   ))
+                )}
+              </div>
+            </section>
+
+            {/* Textbook */}
+            <section className="rounded-lg border border-border bg-card overflow-hidden">
+              <div className="flex items-center justify-between p-4 border-b border-border bg-secondary/30">
+                <div className="inline-flex items-center gap-2 font-serif font-bold">
+                  <BookOpen className="h-4 w-4 text-accent" /> 교재 정보
+                </div>
+              </div>
+              <div className="p-5">
+                {course?.textbook_title || course?.textbook_info ? (
+                  <div>
+                    {course.textbook_title && <div className="font-serif text-lg font-bold text-primary">{course.textbook_title}</div>}
+                    {course.textbook_info && <p className="mt-2 text-sm text-muted-foreground whitespace-pre-wrap">{course.textbook_info}</p>}
+                  </div>
+                ) : (
+                  <div className="text-sm text-muted-foreground">등록된 교재 정보가 없습니다.</div>
                 )}
               </div>
             </section>

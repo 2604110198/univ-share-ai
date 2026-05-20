@@ -10,6 +10,7 @@ import { ArrowLeft, Download, Eye, Trash2, Paperclip, FileUp } from "lucide-reac
 import { formatBytes, formatDate, ROLE_LABEL } from "@/lib/format";
 import { downloadAttachment, uploadAttachments } from "@/lib/attachments";
 import { Input } from "@/components/ui/input";
+import { PostComments } from "@/components/post-comments";
 
 export const Route = createFileRoute("/post/$postId")({
   head: () => ({ meta: [{ title: "글 보기 — 반도체장비소프트웨어학과" }] }),
@@ -193,6 +194,8 @@ function PostPage() {
             </footer>
           )}
         </article>
+
+        <PostComments postId={post.id} profile={profile} allowSecret={post.category === "assignment" || post.category === "submission"} />
 
         {/* Assignment submissions */}
         {isAssignment && (

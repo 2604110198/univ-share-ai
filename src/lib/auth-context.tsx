@@ -10,6 +10,7 @@ export interface Profile {
   student_id: string | null;
   email: string;
   role: AppRole;
+  can_write_notice?: boolean;
 }
 
 interface AuthContextValue {

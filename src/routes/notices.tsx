@@ -45,23 +45,11 @@ function NoticesPage() {
   const pageRest = rest.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
   const visible = [...pinned, ...pageRest];
 
-  const [canPinUser, setCanPinUser] = useState(false);
-  useEffect(() => {
-    (async () => {
-      if (!profile) { setCanPinUser(false); return; }
-      if (profile.role === "admin") { setCanPinUser(true); return; }
-      if (profile.role === "professor") {
-        const { data } = await supabase.from("profiles").select("can_pin").eq("id", profile.id).maybeSingle();
-        setCanPinUser(Boolean(data?.can_pin));
-      } else {
-        setCanPinUser(false);
-      }
-    })();
-  }, [profile]);
+  const canPinUser = profile?.role === "admin";
 
   if (loading) return <div className="min-h-screen grid place-items-center text-muted-foreground">불러오는 중...</div>;
   if (!user) return null;
-  const canWrite = profile?.role === "professor" || profile?.role === "admin";
+  const canWrite = profile?.role === "professor" || profile?.role === "admin" || Boolean(profile?.can_write_notice);
 
   const togglePin = async (id: string, next: boolean) => {
     const { error } = await supabase.from("posts").update({ is_pinned: next }).eq("id", id);
