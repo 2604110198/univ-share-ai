@@ -8,6 +8,7 @@ import { ArrowLeft, Trash2, ImageOff } from "lucide-react";
 import { galleryImageUrl } from "@/lib/attachments";
 import { formatPostDate } from "@/lib/format";
 import { toast } from "sonner";
+import { PostComments } from "@/components/post-comments";
 
 export const Route = createFileRoute("/gallery/$postId")({
   head: () => ({ meta: [{ title: "이미지 게시글 — 반도체장비소프트웨어학과" }] }),
@@ -100,6 +101,8 @@ function GalleryDetailPage() {
             )}
           </article>
         )}
+
+        {post && profile && <PostComments postId={post.id} profile={profile} />}
       </main>
     </div>
   );
