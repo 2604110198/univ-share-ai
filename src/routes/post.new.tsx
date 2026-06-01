@@ -33,7 +33,7 @@ export const Route = createFileRoute("/post/new")({
 });
 
 interface Course { id: string; name: string; professor_id: string | null }
-interface Prof { id: string; full_name: string }
+interface Prof { id: string; full_name: string; role: string }
 type NotifyAudience = "none" | "all" | "students";
 
 function NewPostPage() {
