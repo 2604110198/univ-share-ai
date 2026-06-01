@@ -68,7 +68,15 @@ function NewPostPage() {
         setCourses((data ?? []) as Course[]);
       }
       if (category === "inquiry") {
-        const { data } = await supabase.from("profiles").select("id, full_name").eq("role", "professor");
+        const wantedRoles: ("student" | "professor" | "admin")[] =
+          profile.role === "professor"
+            ? ["student", "professor", "admin"]
+            : ["professor", "admin"];
+        const { data } = await supabase
+          .from("profiles")
+          .select("id, full_name, role")
+          .in("role", wantedRoles)
+          .neq("id", user.id);
         setProfs((data ?? []) as Prof[]);
       }
       setCanPin(profile.role === "admin");
