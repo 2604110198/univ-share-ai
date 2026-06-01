@@ -19,6 +19,7 @@ interface Course {
   start_time: string;
   end_time: string;
   classroom: string | null;
+  professor_id: string | null;
   professor_name: string | null;
 }
 
@@ -76,24 +77,31 @@ function DashboardPage() {
                     {dayCourses.length === 0 ? (
                       <div className="text-xs text-muted-foreground text-center py-6">강의 없음</div>
                     ) : (
-                      dayCourses.map((c) => (
+                      dayCourses.map((c) => {
+                        const mine = profile?.role === "professor" && c.professor_id === profile.id;
+                        return (
                         <Link
                           key={c.id}
                           to="/course/$courseId"
                           params={{ courseId: c.id }}
-                          className="block rounded-md border border-border p-3 bg-background hover:border-accent transition-colors group"
+                          className={`block rounded-md border p-3 transition-colors group ${
+                            mine
+                              ? "border-accent bg-accent/15 hover:bg-accent/25"
+                              : "border-border bg-background hover:border-accent"
+                          }`}
                         >
                           <div className="flex items-start justify-between gap-1">
-                            <div className="font-bold text-sm mb-1 group-hover:text-accent">{c.name}</div>
+                            <div className={`font-bold text-sm mb-1 ${mine ? "text-accent-foreground/90 group-hover:text-accent" : "group-hover:text-accent"}`} style={mine ? { color: "hsl(25 90% 35%)" } : undefined}>{c.name}</div>
                             <ChevronRight className="h-3.5 w-3.5 text-muted-foreground group-hover:text-accent shrink-0 mt-0.5" />
                           </div>
-                          <div className="text-[11px] text-muted-foreground space-y-0.5">
+                          <div className={`text-[11px] space-y-0.5 ${mine ? "" : "text-muted-foreground"}`} style={mine ? { color: "hsl(25 50% 30%)" } : undefined}>
                             <div className="flex items-center gap-1"><Clock className="h-3 w-3" /> {c.start_time.slice(0, 5)} ~ {c.end_time.slice(0, 5)}</div>
                             {c.classroom && <div className="flex items-center gap-1"><MapPin className="h-3 w-3" /> {c.classroom}</div>}
-                            {c.professor_name && <div className="flex items-center gap-1"><User className="h-3 w-3" /> {c.professor_name}</div>}
+                            {c.professor_name && <div className="flex items-center gap-1"><User className="h-3 w-3" /> {c.professor_name}{mine && " (내 강의)"}</div>}
                           </div>
                         </Link>
-                      ))
+                        );
+                      })
                     )}
                   </div>
                 </div>

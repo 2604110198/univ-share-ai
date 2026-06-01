@@ -73,7 +73,9 @@ export type Database = {
           professor_id: string | null
           professor_name: string | null
           start_time: string
+          textbook_image_path: string | null
           textbook_info: string | null
+          textbook_purchase_url: string | null
           textbook_title: string | null
           weekday: Database["public"]["Enums"]["weekday"]
         }
@@ -87,7 +89,9 @@ export type Database = {
           professor_id?: string | null
           professor_name?: string | null
           start_time: string
+          textbook_image_path?: string | null
           textbook_info?: string | null
+          textbook_purchase_url?: string | null
           textbook_title?: string | null
           weekday: Database["public"]["Enums"]["weekday"]
         }
@@ -101,7 +105,9 @@ export type Database = {
           professor_id?: string | null
           professor_name?: string | null
           start_time?: string
+          textbook_image_path?: string | null
           textbook_info?: string | null
+          textbook_purchase_url?: string | null
           textbook_title?: string | null
           weekday?: Database["public"]["Enums"]["weekday"]
         }

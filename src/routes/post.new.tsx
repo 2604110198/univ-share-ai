@@ -33,7 +33,7 @@ export const Route = createFileRoute("/post/new")({
 });
 
 interface Course { id: string; name: string; professor_id: string | null }
-interface Prof { id: string; full_name: string }
+interface Prof { id: string; full_name: string; role: string }
 type NotifyAudience = "none" | "all" | "students";
 
 function NewPostPage() {
@@ -68,7 +68,15 @@ function NewPostPage() {
         setCourses((data ?? []) as Course[]);
       }
       if (category === "inquiry") {
-        const { data } = await supabase.from("profiles").select("id, full_name").eq("role", "professor");
+        const wantedRoles: ("student" | "professor" | "admin")[] =
+          profile.role === "professor"
+            ? ["student", "professor", "admin"]
+            : ["professor", "admin"];
+        const { data } = await supabase
+          .from("profiles")
+          .select("id, full_name, role")
+          .in("role", wantedRoles)
+          .neq("id", user.id);
         setProfs((data ?? []) as Prof[]);
       }
       setCanPin(profile.role === "admin");
@@ -105,7 +113,7 @@ function NewPostPage() {
     if (!user) return;
     if (!title.trim()) { toast.error("제목을 입력하세요"); return; }
     if (category === "assignment" && !courseId) { toast.error("강의를 선택하세요"); return; }
-    if (category === "inquiry" && !targetProf) { toast.error("문의 대상 교수를 선택하세요"); return; }
+    if (category === "inquiry" && !targetProf) { toast.error("문의 대상을 선택하세요"); return; }
     if (category === "gallery" && files.length === 0) { toast.error("이미지를 1개 이상 첨부하세요"); return; }
     setSubmitting(true);
 
@@ -144,7 +152,7 @@ function NewPostPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <SiteHeader />
-      <main className="flex-1 mx-auto max-w-3xl w-full px-6 py-10">
+      <main className={`flex-1 mx-auto w-full px-6 py-10 ${category === "gallery" ? "max-w-5xl" : "max-w-3xl"}`}>
         <Link to="/dashboard" className="text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-1 mb-3">
           <ArrowLeft className="h-3 w-3" /> 돌아가기
         </Link>
@@ -170,14 +178,19 @@ function NewPostPage() {
 
           {category === "inquiry" && (
             <div className="space-y-2">
-              <Label>문의 대상 교수 <span className="text-destructive">*</span></Label>
+              <Label>문의 대상 <span className="text-destructive">*</span></Label>
               <Select value={targetProf} onValueChange={setTargetProf}>
-                <SelectTrigger><SelectValue placeholder="교수를 선택하세요" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="문의할 대상을 선택하세요" /></SelectTrigger>
                 <SelectContent>
-                  {profs.map((p) => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}
+                  {profs.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.full_name}
+                      {p.role === "admin" ? " (관리자)" : p.role === "professor" ? " 교수님" : " (학생)"}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
-              <p className="text-[11px] text-muted-foreground">선택한 교수와 관리자만 문의 내용을 열람할 수 있습니다.</p>
+              <p className="text-[11px] text-muted-foreground">문의 대상만 열람 가능합니다.</p>
             </div>
           )}
 
@@ -191,14 +204,50 @@ function NewPostPage() {
 
           <div className="space-y-2">
             <Label>내용</Label>
-            <Textarea value={content} onChange={(e) => setContent(e.target.value)} rows={8} placeholder="내용을 입력하세요" />
+            <Textarea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              rows={category === "gallery" ? 12 : 8}
+              placeholder={category === "gallery" ? "사진에 대한 설명을 자유롭게 작성하세요" : "내용을 입력하세요"}
+            />
           </div>
 
           <div className="space-y-2">
-            <Label className="flex items-center gap-1.5"><Paperclip className="h-4 w-4" /> 첨부파일</Label>
-            <Input type="file" multiple onChange={(e) => setFiles(Array.from(e.target.files ?? []))} />
-            {files.length > 0 && (
+            <Label className="flex items-center gap-1.5">
+              <Paperclip className="h-4 w-4" />
+              {category === "gallery" ? "이미지 첨부" : "첨부파일"}
+            </Label>
+            <Input
+              type="file"
+              multiple
+              accept={category === "gallery" ? "image/*" : undefined}
+              onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
+            />
+            {files.length > 0 && category !== "gallery" && (
               <div className="text-xs text-muted-foreground">{files.length}개 선택됨</div>
+            )}
+            {category === "gallery" && files.length > 0 && (
+              <div className="mt-2">
+                <div className="text-xs text-muted-foreground mb-2">{files.length}개 이미지 · 미리보기</div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                  {files.map((f, i) => (
+                    <div key={i} className="relative aspect-square rounded-md border border-border overflow-hidden bg-secondary">
+                      <img src={URL.createObjectURL(f)} alt={f.name} className="absolute inset-0 w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setFiles((prev) => prev.filter((_, idx) => idx !== i))}
+                        className="absolute top-1 right-1 h-6 w-6 rounded-full bg-black/70 text-white text-xs grid place-items-center hover:bg-black"
+                        aria-label="삭제"
+                      >
+                        ×
+                      </button>
+                      <div className="absolute bottom-0 inset-x-0 px-2 py-1 text-[10px] text-white bg-gradient-to-t from-black/80 to-transparent truncate">
+                        {f.name}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
             {category === "assignment" && (
               <p className="text-[11px] text-muted-foreground">학생이 다운로드 할 양식 파일을 첨부할 수 있습니다.</p>
