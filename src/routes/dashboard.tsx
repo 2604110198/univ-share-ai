@@ -19,6 +19,7 @@ interface Course {
   start_time: string;
   end_time: string;
   classroom: string | null;
+  professor_id: string | null;
   professor_name: string | null;
 }
 
