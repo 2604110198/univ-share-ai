@@ -33,7 +33,7 @@ interface Thread {
   unread: boolean;
 }
 
-interface Prof { id: string; full_name: string }
+interface Prof { id: string; full_name: string; role: string }
 
 function InquiriesPage() {
   const { user, profile, loading } = useAuth();
