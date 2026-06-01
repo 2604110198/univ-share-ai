@@ -107,7 +107,7 @@ function InquiriesPage() {
       // - professor: can contact any student, any other professor, or admin
       // - admin: can contact anyone (we still show profs + admins by default;
       //          message students by selecting them in the list)
-      const wantedRoles: string[] =
+      const wantedRoles: ("student" | "professor" | "admin")[] =
         profile.role === "professor"
           ? ["student", "professor", "admin"]
           : ["professor", "admin"];
