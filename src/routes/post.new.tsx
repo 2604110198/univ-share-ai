@@ -178,14 +178,19 @@ function NewPostPage() {
 
           {category === "inquiry" && (
             <div className="space-y-2">
-              <Label>문의 대상 교수 <span className="text-destructive">*</span></Label>
+              <Label>문의 대상 <span className="text-destructive">*</span></Label>
               <Select value={targetProf} onValueChange={setTargetProf}>
-                <SelectTrigger><SelectValue placeholder="교수를 선택하세요" /></SelectTrigger>
+                <SelectTrigger><SelectValue placeholder="문의할 대상을 선택하세요" /></SelectTrigger>
                 <SelectContent>
-                  {profs.map((p) => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}
+                  {profs.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.full_name}
+                      {p.role === "admin" ? " (관리자)" : p.role === "professor" ? " 교수님" : " (학생)"}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
-              <p className="text-[11px] text-muted-foreground">선택한 교수와 관리자만 문의 내용을 열람할 수 있습니다.</p>
+              <p className="text-[11px] text-muted-foreground">문의 대상만 열람 가능합니다.</p>
             </div>
           )}
 
