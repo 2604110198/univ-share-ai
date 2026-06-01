@@ -113,13 +113,16 @@ function Index() {
                   {greeting}
                 </div>
               )}
-              <h1 className="text-4xl md:text-6xl font-serif font-bold leading-[1.1]">
-                {DEPARTMENT_NAME}<br />
-                <span className="text-accent">학과 전용 디스크</span>
+              <h1 className="text-4xl md:text-6xl font-serif font-bold leading-[1.15] break-keep">
+                <span className="whitespace-nowrap">{DEPARTMENT_NAME}</span>
+                <br />
+                <span className="text-accent whitespace-nowrap">학과 CTL 사이트</span>
               </h1>
-              <p className="mt-6 text-base md:text-lg text-primary-foreground/80 max-w-xl leading-relaxed">
-                강의 자료, 과제 제출, 공지사항, 1:1 문의까지 한 곳에서.
-                관리자가 등록한 학번과 교수 이메일만 가입 가능합니다.
+              <p className="mt-6 text-base md:text-lg text-primary-foreground/85 max-w-xl leading-relaxed break-keep">
+                강의 자료·과제·공지사항을 한 곳에서 공유하는{" "}
+                <span className="whitespace-nowrap">{DEPARTMENT_NAME}</span> 전용 디스크입니다.
+                <br className="hidden md:block" />
+                교수와 학생 모두 강의실, 자료실, 과제, 1:1 문의를 편하게 이용할 수 있습니다.
               </p>
               <div className="mt-10 flex flex-wrap gap-3">
                 {user ? (
