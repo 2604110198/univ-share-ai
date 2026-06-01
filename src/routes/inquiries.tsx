@@ -153,7 +153,7 @@ function InquiriesPage() {
         <PageHeader
           icon={MessageSquare}
           title="1:1 문의"
-          description="작성자, 지정한 교수, 관리자만 열람할 수 있는 비공개 메시지입니다."
+          description="작성자와 문의 대상만 열람할 수 있는 비공개 문의처입니다."
           action={
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
@@ -168,21 +168,24 @@ function InquiriesPage() {
                     <Label>제목</Label>
                     <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="문의 제목" />
                   </div>
-                  {profile?.role !== "professor" && (
-                    <div className="space-y-2">
-                      <Label>문의 대상 교수</Label>
-                      <Select value={target} onValueChange={setTarget}>
-                        <SelectTrigger><SelectValue placeholder="교수를 선택하세요" /></SelectTrigger>
-                        <SelectContent>
-                          {profs.length === 0 && <div className="px-3 py-2 text-xs text-muted-foreground">등록된 교수가 없습니다</div>}
-                          {profs.map((p) => <SelectItem key={p.id} value={p.id}>{p.full_name}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                      <p className="text-[11px] text-muted-foreground inline-flex items-center gap-1">
-                        <Lock className="h-3 w-3" /> 선택한 교수와 관리자만 열람합니다.
-                      </p>
-                    </div>
-                  )}
+                  <div className="space-y-2">
+                    <Label>문의 대상</Label>
+                    <Select value={target} onValueChange={setTarget}>
+                      <SelectTrigger><SelectValue placeholder="문의할 대상을 선택하세요" /></SelectTrigger>
+                      <SelectContent>
+                        {profs.length === 0 && <div className="px-3 py-2 text-xs text-muted-foreground">선택 가능한 대상이 없습니다</div>}
+                        {profs.map((p) => (
+                          <SelectItem key={p.id} value={p.id}>
+                            {p.full_name}
+                            {p.role === "admin" ? " (관리자)" : p.role === "professor" ? " 교수님" : " (학생)"}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-[11px] text-muted-foreground inline-flex items-center gap-1">
+                      <Lock className="h-3 w-3" /> 문의 대상만 열람 가능합니다.
+                    </p>
+                  </div>
                   <div className="space-y-2">
                     <Label>내용</Label>
                     <Textarea value={content} onChange={(e) => setContent(e.target.value)} rows={5} placeholder="문의 내용을 입력하세요" />
