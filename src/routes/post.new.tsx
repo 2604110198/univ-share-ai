@@ -152,7 +152,7 @@ function NewPostPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <SiteHeader />
-      <main className="flex-1 mx-auto max-w-3xl w-full px-6 py-10">
+      <main className={`flex-1 mx-auto w-full px-6 py-10 ${category === "gallery" ? "max-w-5xl" : "max-w-3xl"}`}>
         <Link to="/dashboard" className="text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-1 mb-3">
           <ArrowLeft className="h-3 w-3" /> 돌아가기
         </Link>
