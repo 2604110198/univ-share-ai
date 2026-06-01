@@ -7,8 +7,14 @@ import { PageHeader } from "@/components/page-header";
 import { PostTable, type PostListItem } from "@/components/post-table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, BookOpen, Megaphone, FileText, FileUp, Plus, Pin } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { ArrowLeft, BookOpen, Megaphone, FileText, FileUp, Plus, Pin, Pencil, ExternalLink, ImageIcon } from "lucide-react";
 import { formatPostDate, WEEKDAY_LABEL } from "@/lib/format";
+import { galleryImageUrl } from "@/lib/attachments";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/course/$courseId")({
   head: () => ({ meta: [{ title: "강의 — 반도체장비소프트웨어학과" }] }),
@@ -27,6 +33,8 @@ interface Course {
   description: string | null;
   textbook_title: string | null;
   textbook_info: string | null;
+  textbook_image_path: string | null;
+  textbook_purchase_url: string | null;
 }
 
 interface NoticeItem {
@@ -46,6 +54,14 @@ function CoursePage() {
   const [materials, setMaterials] = useState<PostListItem[]>([]);
   const [assignments, setAssignments] = useState<PostListItem[]>([]);
   const [busy, setBusy] = useState(true);
+
+  // textbook editor
+  const [tbOpen, setTbOpen] = useState(false);
+  const [tbTitle, setTbTitle] = useState("");
+  const [tbInfo, setTbInfo] = useState("");
+  const [tbUrl, setTbUrl] = useState("");
+  const [tbFile, setTbFile] = useState<File | null>(null);
+  const [tbSaving, setTbSaving] = useState(false);
 
   useEffect(() => { if (!loading && !user) navigate({ to: "/login" }); }, [loading, user, navigate]);
 
@@ -86,6 +102,55 @@ function CoursePage() {
   const isAdmin = profile.role === "admin";
   const isOwningProf = profile.role === "professor" && course?.professor_id === profile.id;
   const canPostHere = isAdmin || isOwningProf;
+  const canEditTextbook = isAdmin || isOwningProf || Boolean(profile.can_write_notice);
+
+  const openTextbookEditor = () => {
+    setTbTitle(course?.textbook_title ?? "");
+    setTbInfo(course?.textbook_info ?? "");
+    setTbUrl(course?.textbook_purchase_url ?? "");
+    setTbFile(null);
+    setTbOpen(true);
+  };
+
+  const saveTextbook = async () => {
+    if (!course) return;
+    setTbSaving(true);
+    let imagePath = course.textbook_image_path ?? null;
+    if (tbFile) {
+      if (!tbFile.type.startsWith("image/")) {
+        toast.error("이미지 파일만 업로드 가능합니다");
+        setTbSaving(false);
+        return;
+      }
+      const ext = tbFile.name.includes(".") ? tbFile.name.slice(tbFile.name.lastIndexOf(".")) : "";
+      const path = `textbook/${course.id}/${crypto.randomUUID()}${ext}`;
+      const { error: upErr } = await supabase.storage.from("gallery-images").upload(path, tbFile, {
+        contentType: tbFile.type, upsert: false,
+      });
+      if (upErr) { toast.error("이미지 업로드 실패", { description: upErr.message }); setTbSaving(false); return; }
+      imagePath = `gallery-images:${path}`;
+    }
+    const { error } = await supabase.from("courses").update({
+      textbook_title: tbTitle.trim() || null,
+      textbook_info: tbInfo.trim() || null,
+      textbook_purchase_url: tbUrl.trim() || null,
+      textbook_image_path: imagePath,
+    }).eq("id", course.id);
+    setTbSaving(false);
+    if (error) { toast.error("저장 실패", { description: error.message }); return; }
+    toast.success("교재 정보를 저장했습니다");
+    setTbOpen(false);
+    setCourse({
+      ...course,
+      textbook_title: tbTitle.trim() || null,
+      textbook_info: tbInfo.trim() || null,
+      textbook_purchase_url: tbUrl.trim() || null,
+      textbook_image_path: imagePath,
+    });
+  };
+
+  const textbookImg = course?.textbook_image_path ? galleryImageUrl(course.textbook_image_path) : null;
+  const hasTextbook = Boolean(course?.textbook_title || course?.textbook_info || course?.textbook_image_path);
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -148,12 +213,36 @@ function CoursePage() {
                 <div className="inline-flex items-center gap-2 font-serif font-bold">
                   <BookOpen className="h-4 w-4 text-accent" /> 교재 정보
                 </div>
+                {canEditTextbook && (
+                  <Button size="sm" variant="outline" onClick={openTextbookEditor}>
+                    <Pencil className="h-3.5 w-3.5 mr-1" /> {hasTextbook ? "교재 수정" : "교재 등록"}
+                  </Button>
+                )}
               </div>
               <div className="p-5">
-                {course?.textbook_title || course?.textbook_info ? (
-                  <div>
-                    {course.textbook_title && <div className="font-serif text-lg font-bold text-primary">{course.textbook_title}</div>}
-                    {course.textbook_info && <p className="mt-2 text-sm text-muted-foreground whitespace-pre-wrap">{course.textbook_info}</p>}
+                {hasTextbook ? (
+                  <div className="grid md:grid-cols-[180px_1fr] gap-5">
+                    <div className="aspect-[3/4] rounded-md border border-border bg-secondary overflow-hidden grid place-items-center">
+                      {textbookImg ? (
+                        <img src={textbookImg} alt={course?.textbook_title ?? "교재"} className="w-full h-full object-cover" />
+                      ) : (
+                        <ImageIcon className="h-10 w-10 text-muted-foreground/40" />
+                      )}
+                    </div>
+                    <div>
+                      {course?.textbook_title && <div className="font-serif text-lg font-bold text-primary">{course.textbook_title}</div>}
+                      {course?.textbook_info && <p className="mt-2 text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">{course.textbook_info}</p>}
+                      {course?.textbook_purchase_url && (
+                        <a
+                          href={course.textbook_purchase_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-accent hover:underline"
+                        >
+                          구매 링크 <ExternalLink className="h-3.5 w-3.5" />
+                        </a>
+                      )}
+                    </div>
                   </div>
                 ) : (
                   <div className="text-sm text-muted-foreground">등록된 교재 정보가 없습니다.</div>
@@ -193,6 +282,41 @@ function CoursePage() {
           </div>
         )}
       </main>
+
+      <Dialog open={tbOpen} onOpenChange={setTbOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="font-serif">교재 정보 {hasTextbook ? "수정" : "등록"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>교재명</Label>
+              <Input value={tbTitle} onChange={(e) => setTbTitle(e.target.value)} placeholder="예: 반도체 공학의 이해 (3판)" />
+            </div>
+            <div className="space-y-2">
+              <Label>교재 설명</Label>
+              <Textarea value={tbInfo} onChange={(e) => setTbInfo(e.target.value)} rows={5} placeholder="저자, 출판사, 학습 범위, 준비물 등" />
+            </div>
+            <div className="space-y-2">
+              <Label>구매 링크 (선택)</Label>
+              <Input value={tbUrl} onChange={(e) => setTbUrl(e.target.value)} placeholder="https://..." />
+            </div>
+            <div className="space-y-2">
+              <Label>교재 이미지 (선택)</Label>
+              <Input type="file" accept="image/*" onChange={(e) => setTbFile(e.target.files?.[0] ?? null)} />
+              {tbFile ? (
+                <img src={URL.createObjectURL(tbFile)} alt="미리보기" className="mt-2 max-h-48 rounded-md border border-border" />
+              ) : textbookImg ? (
+                <img src={textbookImg} alt="현재 교재 이미지" className="mt-2 max-h-48 rounded-md border border-border" />
+              ) : null}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTbOpen(false)}>취소</Button>
+            <Button onClick={saveTextbook} disabled={tbSaving}>{tbSaving ? "저장 중..." : "저장"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
