@@ -204,14 +204,50 @@ function NewPostPage() {
 
           <div className="space-y-2">
             <Label>내용</Label>
-            <Textarea value={content} onChange={(e) => setContent(e.target.value)} rows={8} placeholder="내용을 입력하세요" />
+            <Textarea
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              rows={category === "gallery" ? 12 : 8}
+              placeholder={category === "gallery" ? "사진에 대한 설명을 자유롭게 작성하세요" : "내용을 입력하세요"}
+            />
           </div>
 
           <div className="space-y-2">
-            <Label className="flex items-center gap-1.5"><Paperclip className="h-4 w-4" /> 첨부파일</Label>
-            <Input type="file" multiple onChange={(e) => setFiles(Array.from(e.target.files ?? []))} />
-            {files.length > 0 && (
+            <Label className="flex items-center gap-1.5">
+              <Paperclip className="h-4 w-4" />
+              {category === "gallery" ? "이미지 첨부" : "첨부파일"}
+            </Label>
+            <Input
+              type="file"
+              multiple
+              accept={category === "gallery" ? "image/*" : undefined}
+              onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
+            />
+            {files.length > 0 && category !== "gallery" && (
               <div className="text-xs text-muted-foreground">{files.length}개 선택됨</div>
+            )}
+            {category === "gallery" && files.length > 0 && (
+              <div className="mt-2">
+                <div className="text-xs text-muted-foreground mb-2">{files.length}개 이미지 · 미리보기</div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                  {files.map((f, i) => (
+                    <div key={i} className="relative aspect-square rounded-md border border-border overflow-hidden bg-secondary">
+                      <img src={URL.createObjectURL(f)} alt={f.name} className="absolute inset-0 w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setFiles((prev) => prev.filter((_, idx) => idx !== i))}
+                        className="absolute top-1 right-1 h-6 w-6 rounded-full bg-black/70 text-white text-xs grid place-items-center hover:bg-black"
+                        aria-label="삭제"
+                      >
+                        ×
+                      </button>
+                      <div className="absolute bottom-0 inset-x-0 px-2 py-1 text-[10px] text-white bg-gradient-to-t from-black/80 to-transparent truncate">
+                        {f.name}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
             {category === "assignment" && (
               <p className="text-[11px] text-muted-foreground">학생이 다운로드 할 양식 파일을 첨부할 수 있습니다.</p>
