@@ -209,7 +209,7 @@ function InquiriesPage() {
             <MessageSquare className="h-10 w-10 mx-auto text-muted-foreground/50 mb-3" />
             <div className="text-muted-foreground mb-1">아직 문의가 없습니다.</div>
             <div className="text-xs text-muted-foreground">
-              교수님 또는 관리자에게 비공개로 메시지를 남길 수 있습니다.
+              교수, 학생, 관리자에게 비공개로 메시지를 남길 수 있습니다.
             </div>
           </div>
         ) : (
