@@ -101,8 +101,21 @@ function InquiriesPage() {
   useEffect(() => {
     if (!user) return;
     load();
-    if (profile && (profile.role === "student" || profile.role === "admin")) {
-      supabase.from("profiles").select("id, full_name").eq("role", "professor")
+    if (profile) {
+      // Build the target list based on the user's role.
+      // - student: can contact any professor or admin
+      // - professor: can contact any student, any other professor, or admin
+      // - admin: can contact anyone (we still show profs + admins by default;
+      //          message students by selecting them in the list)
+      const wantedRoles: string[] =
+        profile.role === "professor"
+          ? ["student", "professor", "admin"]
+          : ["professor", "admin"];
+      supabase
+        .from("profiles")
+        .select("id, full_name, role")
+        .in("role", wantedRoles)
+        .neq("id", user.id)
         .then(({ data }) => setProfs((data ?? []) as Prof[]));
     }
   }, [user, profile, load]);
@@ -111,7 +124,7 @@ function InquiriesPage() {
     if (!user || !profile) return;
     if (!title.trim()) { toast.error("제목을 입력하세요"); return; }
     if (!content.trim()) { toast.error("내용을 입력하세요"); return; }
-    if (profile.role !== "professor" && !target) { toast.error("문의 대상 교수를 선택하세요"); return; }
+    if (!target) { toast.error("문의 대상을 선택하세요"); return; }
     setCreating(true);
     const { error } = await supabase.from("posts").insert({
       category: "inquiry",
@@ -120,7 +133,7 @@ function InquiriesPage() {
       author_id: user.id,
       author_name: profile.full_name,
       author_role: profile.role,
-      inquiry_target_professor_id: profile.role === "professor" ? null : target || null,
+      inquiry_target_professor_id: target,
     });
     setCreating(false);
     if (error) { toast.error("문의 작성 실패", { description: error.message }); return; }
