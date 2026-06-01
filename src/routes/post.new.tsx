@@ -113,7 +113,7 @@ function NewPostPage() {
     if (!user) return;
     if (!title.trim()) { toast.error("제목을 입력하세요"); return; }
     if (category === "assignment" && !courseId) { toast.error("강의를 선택하세요"); return; }
-    if (category === "inquiry" && !targetProf) { toast.error("문의 대상 교수를 선택하세요"); return; }
+    if (category === "inquiry" && !targetProf) { toast.error("문의 대상을 선택하세요"); return; }
     if (category === "gallery" && files.length === 0) { toast.error("이미지를 1개 이상 첨부하세요"); return; }
     setSubmitting(true);
 
