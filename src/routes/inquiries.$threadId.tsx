@@ -146,7 +146,7 @@ function InquiryThreadPage() {
                   <Lock className="h-3 w-3" /> 비공개
                 </Badge>
                 <span>작성자 <span className="font-medium text-foreground">{thread.author_name}</span></span>
-                {targetName && <span>· 대상 교수 <span className="font-medium text-foreground">{targetName} 교수님</span></span>}
+                {targetName && <span>· 문의 대상 <span className="font-medium text-foreground">{targetName}</span></span>}
                 <span>· {formatDate(thread.created_at)}</span>
               </div>
             </div>
