@@ -286,6 +286,47 @@ function NewPostPage() {
             <Button onClick={submit} disabled={submitting}>{submitting ? "등록 중..." : "등록"}</Button>
           </div>
         </div>
+
+        {category === "gallery" && (
+          <div className="mt-8">
+            <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">게시글 미리보기</div>
+            <article className="rounded-lg border border-border bg-card p-6">
+              <h2 className="font-serif text-xl md:text-2xl font-bold text-primary">
+                {title.trim() || <span className="text-muted-foreground/60">(제목)</span>}
+              </h2>
+              <div className="mt-1 text-xs text-muted-foreground">
+                {profile.full_name} · 방금 전 · 사진 {files.length}장
+              </div>
+              {files.length > 0 ? (
+                <>
+                  <img
+                    src={URL.createObjectURL(files[0])}
+                    alt="대표 이미지"
+                    className="mt-4 w-full max-h-[480px] object-contain rounded-md border border-border bg-secondary"
+                  />
+                  {files.length > 1 && (
+                    <div className="mt-2 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                      {files.slice(1).map((f, i) => (
+                        <div key={i} className="relative aspect-square rounded-md overflow-hidden border border-border bg-secondary">
+                          <img src={URL.createObjectURL(f)} alt={f.name} className="absolute inset-0 w-full h-full object-cover" />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="mt-4 aspect-video grid place-items-center bg-secondary rounded-md text-muted-foreground text-sm">
+                  이미지를 첨부하면 여기에 표시됩니다
+                </div>
+              )}
+              {content.trim() && (
+                <div className="mt-6 pt-6 border-t border-border whitespace-pre-wrap text-sm leading-relaxed">
+                  {content}
+                </div>
+              )}
+            </article>
+          </div>
+        )}
       </main>
     </div>
   );
