@@ -479,6 +479,16 @@ export type Database = {
         Args: { _course_id: string; _user_id: string }
         Returns: boolean
       }
+      update_course_textbook: {
+        Args: {
+          _course_id: string
+          _image_path: string
+          _info: string
+          _purchase_url: string
+          _title: string
+        }
+        Returns: undefined
+      }
       update_my_profile: { Args: { _full_name: string }; Returns: undefined }
     }
     Enums: {

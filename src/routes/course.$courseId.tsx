@@ -130,12 +130,13 @@ function CoursePage() {
       if (upErr) { toast.error("이미지 업로드 실패", { description: upErr.message }); setTbSaving(false); return; }
       imagePath = `gallery-images:${path}`;
     }
-    const { error } = await supabase.from("courses").update({
-      textbook_title: tbTitle.trim() || null,
-      textbook_info: tbInfo.trim() || null,
-      textbook_purchase_url: tbUrl.trim() || null,
-      textbook_image_path: imagePath,
-    }).eq("id", course.id);
+    const { error } = await supabase.rpc("update_course_textbook", {
+      _course_id: course.id,
+      _title: tbTitle.trim(),
+      _info: tbInfo.trim(),
+      _image_path: imagePath ?? "",
+      _purchase_url: tbUrl.trim(),
+    });
     setTbSaving(false);
     if (error) { toast.error("저장 실패", { description: error.message }); return; }
     toast.success("교재 정보를 저장했습니다");
