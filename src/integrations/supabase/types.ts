@@ -211,49 +211,34 @@ export type Database = {
       }
       post_attachments: {
         Row: {
-          align: string
           created_at: string
-          display_order: number
           file_name: string
-          height_px: number | null
           id: string
-          is_cover: boolean
           mime_type: string | null
           post_id: string
           size_bytes: number
           storage_path: string
           uploader_id: string
-          width_percent: number
         }
         Insert: {
-          align?: string
           created_at?: string
-          display_order?: number
           file_name: string
-          height_px?: number | null
           id?: string
-          is_cover?: boolean
           mime_type?: string | null
           post_id: string
           size_bytes: number
           storage_path: string
           uploader_id: string
-          width_percent?: number
         }
         Update: {
-          align?: string
           created_at?: string
-          display_order?: number
           file_name?: string
-          height_px?: number | null
           id?: string
-          is_cover?: boolean
           mime_type?: string | null
           post_id?: string
           size_bytes?: number
           storage_path?: string
           uploader_id?: string
-          width_percent?: number
         }
         Relationships: [
           {
@@ -481,10 +466,6 @@ export type Database = {
     Functions: {
       admin_exists: { Args: never; Returns: boolean }
       bootstrap_admin: { Args: never; Returns: undefined }
-      can_manage_post_attachment: {
-        Args: { _attachment_id: string }
-        Returns: boolean
-      }
       can_view_post_comment: { Args: { _comment_id: string }; Returns: boolean }
       has_role: {
         Args: {
@@ -497,11 +478,6 @@ export type Database = {
       is_course_professor: {
         Args: { _course_id: string; _user_id: string }
         Returns: boolean
-      }
-      mark_post_read: { Args: { _post_id: string }; Returns: undefined }
-      set_gallery_cover: {
-        Args: { _attachment_id: string }
-        Returns: undefined
       }
       update_course_textbook: {
         Args: {

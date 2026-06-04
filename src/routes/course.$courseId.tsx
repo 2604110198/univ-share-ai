@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, BookOpen, Megaphone, FileText, FileUp, Plus, Pin, Pencil, ExternalLink, ImageIcon } from "lucide-react";
-import { formatDate, WEEKDAY_LABEL } from "@/lib/format";
+import { formatPostDate, WEEKDAY_LABEL } from "@/lib/format";
 import { galleryImageUrl } from "@/lib/attachments";
 import { toast } from "sonner";
 
@@ -43,7 +43,6 @@ interface NoticeItem {
   author_name: string;
   created_at: string;
   is_pinned: boolean;
-  read_at?: string | null;
 }
 
 function CoursePage() {
@@ -90,18 +89,7 @@ function CoursePage() {
           .order("is_pinned", { ascending: false })
           .order("created_at", { ascending: false }),
       ]);
-      const noticeRows = (noticeRes.data ?? []) as NoticeItem[];
-      const noticeIds = noticeRows.map((n) => n.id);
-      const readMap = new Map<string, string>();
-      if (noticeIds.length) {
-        const { data: reads } = await supabase
-          .from("post_reads")
-          .select("post_id, read_at")
-          .eq("user_id", user.id)
-          .in("post_id", noticeIds);
-        for (const r of reads ?? []) readMap.set(r.post_id, r.read_at);
-      }
-      setNotices(noticeRows.map((n) => ({ ...n, read_at: readMap.get(n.id) ?? null })));
+      setNotices((noticeRes.data ?? []) as NoticeItem[]);
       setMaterials((matRes.data ?? []) as PostListItem[]);
       setAssignments((assignRes.data ?? []) as PostListItem[]);
       setBusy(false);
@@ -205,21 +193,17 @@ function CoursePage() {
                 {notices.length === 0 ? (
                   <div className="p-8 text-center text-sm text-muted-foreground">등록된 공지가 없습니다.</div>
                 ) : (
-                  notices.map((n) => {
-                    const isRead = Boolean(n.read_at && new Date(n.read_at) >= new Date(n.created_at));
-                    return (
+                  notices.map((n) => (
                     <Link key={n.id} to="/post/$postId" params={{ postId: n.id }}
-                      onClick={() => supabase.rpc("mark_post_read", { _post_id: n.id })}
                       className={`flex items-center justify-between p-3 hover:bg-secondary/40 ${n.is_pinned ? "bg-muted/40" : ""}`}>
                       <div className="min-w-0 flex items-center gap-2">
                         {n.is_pinned && <Pin className="h-3 w-3 text-accent shrink-0" />}
-                        {!isRead && <span className="text-xs font-black text-accent shrink-0">New</span>}
-                        <span className={`truncate ${isRead ? "text-muted-foreground" : "text-foreground"} ${n.is_pinned ? "font-bold" : "font-medium"}`}>{n.title}</span>
+                        <span className={`truncate ${n.is_pinned ? "font-bold" : "font-medium"}`}>{n.title}</span>
                         <Badge variant="outline" className="ml-1 shrink-0">{n.author_name}</Badge>
                       </div>
-                      <span className="text-xs text-muted-foreground shrink-0 ml-3">{formatDate(n.created_at)}</span>
+                      <span className="text-xs text-muted-foreground shrink-0 ml-3">{formatPostDate(n.created_at)}</span>
                     </Link>
-                  );})
+                  ))
                 )}
               </div>
             </section>
