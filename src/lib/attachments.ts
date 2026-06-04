@@ -46,9 +46,11 @@ export async function uploadGalleryImages(opts: {
   postId: string;
   files: File[];
   uploaderId: string;
+  metadata?: Array<{ displayOrder?: number; isCover?: boolean; widthPercent?: number; heightPx?: number | null }>;
 }) {
   const errors: string[] = [];
-  for (const file of opts.files) {
+  const uploaded: Array<{ tempIndex: number; attachmentId: string }> = [];
+  for (const [index, file] of opts.files.entries()) {
     if (!file.type.startsWith("image/")) { errors.push(`${file.name}: 이미지 파일이 아닙니다`); continue; }
     const ext = file.name.includes(".") ? file.name.slice(file.name.lastIndexOf(".")) : "";
     const path = `${opts.postId}/${crypto.randomUUID()}${ext}`;
@@ -56,17 +58,22 @@ export async function uploadGalleryImages(opts: {
       contentType: file.type, upsert: false,
     });
     if (upErr) { errors.push(`${file.name}: ${upErr.message}`); continue; }
-    const { error: insErr } = await supabase.from("post_attachments").insert({
+    const { data: inserted, error: insErr } = await supabase.from("post_attachments").insert({
       post_id: opts.postId,
       file_name: file.name,
       storage_path: `gallery-images:${path}`,
       size_bytes: file.size,
       mime_type: file.type,
       uploader_id: opts.uploaderId,
-    });
+      display_order: opts.metadata?.[index]?.displayOrder ?? index,
+      is_cover: opts.metadata?.[index]?.isCover ?? index === 0,
+      width_percent: opts.metadata?.[index]?.widthPercent ?? 100,
+      height_px: opts.metadata?.[index]?.heightPx ?? null,
+    }).select("id").single();
     if (insErr) errors.push(`${file.name}: ${insErr.message}`);
+    else if (inserted?.id) uploaded.push({ tempIndex: index, attachmentId: inserted.id });
   }
-  return errors;
+  return { errors, uploaded };
 }
 
 /** Get a public URL for a gallery image stored with the `gallery-images:` path prefix. */
