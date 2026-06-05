@@ -87,12 +87,16 @@ export function createInitialGalleryBlocks(content: string | null | undefined, i
   const used = new Set<string>();
 
   if (doc) {
-    const blocks: GalleryEditorBlock[] = doc.flatMap((block) => {
-      if (block.type === "text") return [{ id: newId(), type: "text", text: block.text }];
+    const blocks: GalleryEditorBlock[] = [];
+    for (const block of doc) {
+      if (block.type === "text") {
+        blocks.push({ id: newId(), type: "text", text: block.text });
+        continue;
+      }
       const image = imageById.get(block.attachmentId);
-      if (!image) return [];
+      if (!image) continue;
       used.add(image.id);
-      return [{
+      blocks.push({
         id: newId(),
         type: "image" as const,
         attachmentId: image.id,
@@ -102,8 +106,8 @@ export function createInitialGalleryBlocks(content: string | null | undefined, i
         heightPx: block.heightPx ?? image.heightPx,
         align: block.align ?? image.align,
         isCover: block.isCover ?? image.isCover,
-      }];
-    });
+      });
+    }
     for (const image of images) {
       if (!used.has(image.id)) blocks.push(imageToEditorBlock(image));
     }
