@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, BookOpen, Megaphone, FileText, FileUp, Plus, Pin, Pencil, ExternalLink, ImageIcon } from "lucide-react";
-import { formatPostDate, WEEKDAY_LABEL } from "@/lib/format";
+import { formatDate, WEEKDAY_LABEL } from "@/lib/format";
 import { galleryImageUrl } from "@/lib/attachments";
 import { toast } from "sonner";
 
@@ -51,6 +51,7 @@ function CoursePage() {
   const navigate = useNavigate();
   const [course, setCourse] = useState<Course | null>(null);
   const [notices, setNotices] = useState<NoticeItem[]>([]);
+  const [readPostIds, setReadPostIds] = useState<Set<string>>(new Set());
   const [materials, setMaterials] = useState<PostListItem[]>([]);
   const [assignments, setAssignments] = useState<PostListItem[]>([]);
   const [busy, setBusy] = useState(true);
@@ -89,7 +90,19 @@ function CoursePage() {
           .order("is_pinned", { ascending: false })
           .order("created_at", { ascending: false }),
       ]);
-      setNotices((noticeRes.data ?? []) as NoticeItem[]);
+      const courseNotices = (noticeRes.data ?? []) as NoticeItem[];
+      setNotices(courseNotices);
+      const noticeIds = courseNotices.map((notice) => notice.id);
+      if (noticeIds.length) {
+        const { data: reads } = await supabase
+          .from("post_reads")
+          .select("post_id")
+          .in("post_id", noticeIds)
+          .eq("user_id", user.id);
+        setReadPostIds(new Set((reads ?? []).map((read) => read.post_id)));
+      } else {
+        setReadPostIds(new Set());
+      }
       setMaterials((matRes.data ?? []) as PostListItem[]);
       setAssignments((assignRes.data ?? []) as PostListItem[]);
       setBusy(false);
