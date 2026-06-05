@@ -30,7 +30,17 @@ export const Route = createFileRoute("/gallery/$postId")({
 });
 
 interface PostRow { id: string; title: string; content: string | null; author_name: string; author_id: string; created_at: string }
-interface ImgItem { id: string; url: string; name: string }
+interface ImgItem {
+  id: string;
+  url: string;
+  name: string;
+  storagePath: string;
+  widthPercent: number;
+  heightPx: number | null;
+  align: GalleryImageAlign;
+  isCover: boolean;
+  displayOrder: number;
+}
 
 function GalleryDetailPage() {
   const { postId } = Route.useParams();
@@ -40,12 +50,15 @@ function GalleryDetailPage() {
   const [images, setImages] = useState<ImgItem[]>([]);
   const [busy, setBusy] = useState(true);
   const [lightbox, setLightbox] = useState<number | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editBlocks, setEditBlocks] = useState<GalleryEditorBlock[]>([]);
+  const [editSaving, setEditSaving] = useState(false);
 
   useEffect(() => { if (!loading && !user) navigate({ to: "/login" }); }, [loading, user, navigate]);
 
-  useEffect(() => {
-    if (!user) return;
-    (async () => {
+  const loadPost = async () => {
+    setBusy(true);
       await supabase.rpc("increment_post_view", { _post_id: postId });
       const { data: p } = await supabase
         .from("posts")
@@ -54,24 +67,100 @@ function GalleryDetailPage() {
       setPost(p as PostRow | null);
       const { data: atts } = await supabase
         .from("post_attachments")
-        .select("id, file_name, storage_path")
+        .select("id, file_name, storage_path, width_percent, height_px, align, is_cover, display_order")
         .eq("post_id", postId)
+        .order("display_order", { ascending: true })
         .order("created_at", { ascending: true });
-      setImages((atts ?? []).map((a) => ({ id: a.id, name: a.file_name, url: galleryImageUrl(a.storage_path) })));
+      setImages((atts ?? []).map((a) => ({
+        id: a.id,
+        name: a.file_name,
+        storagePath: a.storage_path,
+        url: galleryImageUrl(a.storage_path),
+        widthPercent: a.width_percent ?? 100,
+        heightPx: a.height_px ?? null,
+        align: (a.align as GalleryImageAlign) ?? "center",
+        isCover: Boolean(a.is_cover),
+        displayOrder: a.display_order ?? 0,
+      })));
       setBusy(false);
-    })();
+  };
+
+  useEffect(() => {
+    if (!user) return;
+    loadPost();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, postId]);
 
   if (loading || busy) return <div className="min-h-screen grid place-items-center text-muted-foreground">불러오는 중...</div>;
   if (!user) return null;
 
-  const canDelete = post && (post.author_id === user.id || profile?.role === "admin");
+  const canManage = Boolean(post && (post.author_id === user.id || profile?.role === "admin"));
 
   const onDelete = async () => {
     if (!confirm("이 게시글을 삭제하시겠습니까?")) return;
     const { error } = await supabase.from("posts").delete().eq("id", postId);
     if (error) toast.error("삭제 실패", { description: error.message });
     else { toast.success("삭제되었습니다"); navigate({ to: "/gallery" }); }
+  };
+
+  const openEditor = () => {
+    if (!post) return;
+    setEditTitle(post.title);
+    setEditBlocks(createInitialGalleryBlocks(post.content, images));
+    setEditOpen(true);
+  };
+
+  const saveEdit = async () => {
+    if (!post || !user) return;
+    if (!editTitle.trim()) { toast.error("제목을 입력하세요"); return; }
+    const normalized = ensureSingleCover(editBlocks);
+    const imageBlocks = normalized.filter((block): block is Extract<GalleryEditorBlock, { type: "image" }> => block.type === "image");
+    if (imageBlocks.length === 0) { toast.error("이미지를 1개 이상 유지하세요"); return; }
+    setEditSaving(true);
+
+    const newImages = imageBlocks.filter((block) => block.file).map((block, index) => ({
+      localId: block.id,
+      file: block.file!,
+      widthPercent: block.widthPercent,
+      heightPx: block.heightPx,
+      align: block.align,
+      isCover: block.isCover,
+      displayOrder: index,
+    }));
+    const { uploaded, errors } = await uploadGalleryEditorImages({ postId: post.id, uploaderId: user.id, images: newImages });
+    const idByLocal = new Map(uploaded.map((item) => [item.localId, item.attachmentId]));
+    const finalBlocks = normalized.map((block): GalleryEditorBlock => {
+      if (block.type === "text") return block;
+      return { ...block, attachmentId: block.attachmentId ?? idByLocal.get(block.id) };
+    });
+    const finalImages = finalBlocks.filter((block): block is Extract<GalleryEditorBlock, { type: "image" }> => block.type === "image" && Boolean(block.attachmentId));
+    const usedIds = new Set(finalImages.map((block) => block.attachmentId!));
+
+    for (let index = 0; index < finalImages.length; index += 1) {
+      const block = finalImages[index];
+      await supabase.from("post_attachments").update({
+        width_percent: block.widthPercent,
+        height_px: block.heightPx,
+        align: block.align,
+        is_cover: block.isCover,
+        display_order: index,
+      }).eq("id", block.attachmentId!);
+    }
+
+    const removedIds = images.map((image) => image.id).filter((id) => !usedIds.has(id));
+    if (removedIds.length) await supabase.from("post_attachments").delete().in("id", removedIds);
+
+    const { error } = await supabase.from("posts").update({
+      title: editTitle.trim(),
+      content: serializeGalleryDocument(finalBlocks),
+    }).eq("id", post.id);
+
+    setEditSaving(false);
+    if (error) { toast.error("수정 실패", { description: error.message }); return; }
+    if (errors.length) toast.error("일부 이미지 업로드 실패", { description: errors.join("\n") });
+    toast.success("게시글을 수정했습니다");
+    setEditOpen(false);
+    loadPost();
   };
 
   const showPrev = () => setLightbox((i) => (i === null ? null : (i - 1 + images.length) % images.length));
