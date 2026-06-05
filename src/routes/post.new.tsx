@@ -121,12 +121,14 @@ function NewPostPage() {
     if (!title.trim()) { toast.error("제목을 입력하세요"); return; }
     if (category === "assignment" && !courseId) { toast.error("강의를 선택하세요"); return; }
     if (category === "inquiry" && !targetProf) { toast.error("문의 대상을 선택하세요"); return; }
-    if (category === "gallery" && files.length === 0) { toast.error("이미지를 1개 이상 첨부하세요"); return; }
+    const normalizedGalleryBlocks = ensureSingleCover(galleryBlocks);
+    const galleryImages = normalizedGalleryBlocks.filter((block): block is Extract<GalleryEditorBlock, { type: "image" }> => block.type === "image");
+    if (category === "gallery" && galleryImages.length === 0) { toast.error("이미지를 1개 이상 첨부하세요"); return; }
     setSubmitting(true);
 
     type Insert = Database["public"]["Tables"]["posts"]["Insert"];
     const insert: Insert = {
-      category, title: title.trim(), content: content.trim() || null,
+      category, title: title.trim(), content: category === "gallery" ? null : (content.trim() || null),
       author_id: user.id, author_name: profile.full_name, author_role: profile.role,
       course_id: showCourseSelect && courseId ? courseId : null,
       due_date: category === "assignment" && dueDate ? new Date(dueDate).toISOString() : null,
@@ -141,10 +143,26 @@ function NewPostPage() {
       toast.error("작성 실패", { description: error?.message });
       return;
     }
-    if (files.length) {
-      const errs = category === "gallery"
-        ? await uploadGalleryImages({ postId: created.id, files, uploaderId: user.id })
-        : await uploadAttachments({ postId: created.id, files, uploaderId: user.id });
+    if (category === "gallery") {
+      const { uploaded, errors } = await uploadGalleryEditorImages({
+        postId: created.id,
+        uploaderId: user.id,
+        images: galleryImages.map((block, index) => ({
+          localId: block.id,
+          file: block.file!,
+          widthPercent: block.widthPercent,
+          heightPx: block.heightPx,
+          align: block.align,
+          isCover: block.isCover,
+          displayOrder: index,
+        })),
+      });
+      const idByLocal = new Map(uploaded.map((item) => [item.localId, item.attachmentId]));
+      const savedBlocks = normalizedGalleryBlocks.map((block) => block.type === "image" ? { ...block, attachmentId: idByLocal.get(block.id) } : block);
+      await supabase.from("posts").update({ content: serializeGalleryDocument(savedBlocks) }).eq("id", created.id);
+      if (errors.length) toast.error("일부 이미지 업로드 실패", { description: errors.join("\n") });
+    } else if (files.length) {
+      const errs = await uploadAttachments({ postId: created.id, files, uploaderId: user.id });
       if (errs.length) toast.error("일부 파일 업로드 실패", { description: errs.join("\n") });
     }
     setSubmitting(false);
