@@ -293,7 +293,20 @@ function GalleryDocumentView({ content, images, onImageClick }: { content: strin
         }
         const image = imageById.get(block.attachmentId);
         if (!image) return null;
-        return <GalleryImageBlock key={index} image={{ ...image, ...block }} index={imageIndexById.get(image.id) ?? 0} onImageClick={onImageClick} />;
+        return (
+          <GalleryImageBlock
+            key={index}
+            image={{
+              ...image,
+              widthPercent: block.widthPercent,
+              heightPx: block.heightPx,
+              align: block.align,
+              isCover: block.isCover,
+            }}
+            index={imageIndexById.get(image.id) ?? 0}
+            onImageClick={onImageClick}
+          />
+        );
       })}
     </div>
   );
