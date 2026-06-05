@@ -13,8 +13,14 @@ import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
 import { ArrowLeft, Paperclip, FileEdit } from "lucide-react";
-import { uploadAttachments, uploadGalleryImages } from "@/lib/attachments";
+import { uploadAttachments, uploadGalleryEditorImages } from "@/lib/attachments";
 import type { Database } from "@/integrations/supabase/types";
+import {
+  GalleryPostEditor,
+  ensureSingleCover,
+  serializeGalleryDocument,
+  type GalleryEditorBlock,
+} from "@/components/gallery-post-editor";
 
 type CategoryParam = "material" | "assignment" | "notice" | "inquiry" | "gallery";
 const CATEGORY_LABEL: Record<CategoryParam, string> = {
@@ -51,6 +57,7 @@ function NewPostPage() {
   const [isPinned, setIsPinned] = useState(false);
   const [targetProf, setTargetProf] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+  const [galleryBlocks, setGalleryBlocks] = useState<GalleryEditorBlock[]>([{ id: "initial-text", type: "text", text: "" }]);
   const [notifyAudience, setNotifyAudience] = useState<NotifyAudience>("none");
   const [canPin, setCanPin] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -114,12 +121,14 @@ function NewPostPage() {
     if (!title.trim()) { toast.error("제목을 입력하세요"); return; }
     if (category === "assignment" && !courseId) { toast.error("강의를 선택하세요"); return; }
     if (category === "inquiry" && !targetProf) { toast.error("문의 대상을 선택하세요"); return; }
-    if (category === "gallery" && files.length === 0) { toast.error("이미지를 1개 이상 첨부하세요"); return; }
+    const normalizedGalleryBlocks = ensureSingleCover(galleryBlocks);
+    const galleryImages = normalizedGalleryBlocks.filter((block): block is Extract<GalleryEditorBlock, { type: "image" }> => block.type === "image");
+    if (category === "gallery" && galleryImages.length === 0) { toast.error("이미지를 1개 이상 첨부하세요"); return; }
     setSubmitting(true);
 
     type Insert = Database["public"]["Tables"]["posts"]["Insert"];
     const insert: Insert = {
-      category, title: title.trim(), content: content.trim() || null,
+      category, title: title.trim(), content: category === "gallery" ? null : (content.trim() || null),
       author_id: user.id, author_name: profile.full_name, author_role: profile.role,
       course_id: showCourseSelect && courseId ? courseId : null,
       due_date: category === "assignment" && dueDate ? new Date(dueDate).toISOString() : null,
@@ -134,10 +143,26 @@ function NewPostPage() {
       toast.error("작성 실패", { description: error?.message });
       return;
     }
-    if (files.length) {
-      const errs = category === "gallery"
-        ? await uploadGalleryImages({ postId: created.id, files, uploaderId: user.id })
-        : await uploadAttachments({ postId: created.id, files, uploaderId: user.id });
+    if (category === "gallery") {
+      const { uploaded, errors } = await uploadGalleryEditorImages({
+        postId: created.id,
+        uploaderId: user.id,
+        images: galleryImages.map((block, index) => ({
+          localId: block.id,
+          file: block.file!,
+          widthPercent: block.widthPercent,
+          heightPx: block.heightPx,
+          align: block.align,
+          isCover: block.isCover,
+          displayOrder: index,
+        })),
+      });
+      const idByLocal = new Map(uploaded.map((item) => [item.localId, item.attachmentId]));
+      const savedBlocks = normalizedGalleryBlocks.map((block) => block.type === "image" ? { ...block, attachmentId: idByLocal.get(block.id) } : block);
+      await supabase.from("posts").update({ content: serializeGalleryDocument(savedBlocks) }).eq("id", created.id);
+      if (errors.length) toast.error("일부 이미지 업로드 실패", { description: errors.join("\n") });
+    } else if (files.length) {
+      const errs = await uploadAttachments({ postId: created.id, files, uploaderId: user.id });
       if (errs.length) toast.error("일부 파일 업로드 실패", { description: errs.join("\n") });
     }
     setSubmitting(false);
@@ -202,57 +227,37 @@ function NewPostPage() {
             </div>
           )}
 
-          <div className="space-y-2">
-            <Label>내용</Label>
-            <Textarea
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              rows={category === "gallery" ? 12 : 8}
-              placeholder={category === "gallery" ? "사진에 대한 설명을 자유롭게 작성하세요" : "내용을 입력하세요"}
-            />
-          </div>
+          {category === "gallery" ? (
+            <GalleryPostEditor blocks={galleryBlocks} onChange={setGalleryBlocks} />
+          ) : (
+            <div className="space-y-2">
+              <Label>내용</Label>
+              <Textarea
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                rows={8}
+                placeholder="내용을 입력하세요"
+              />
+            </div>
+          )}
 
-          <div className="space-y-2">
+          {category !== "gallery" && <div className="space-y-2">
             <Label className="flex items-center gap-1.5">
               <Paperclip className="h-4 w-4" />
-              {category === "gallery" ? "이미지 첨부" : "첨부파일"}
+              첨부파일
             </Label>
             <Input
               type="file"
               multiple
-              accept={category === "gallery" ? "image/*" : undefined}
               onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
             />
-            {files.length > 0 && category !== "gallery" && (
+            {files.length > 0 && (
               <div className="text-xs text-muted-foreground">{files.length}개 선택됨</div>
-            )}
-            {category === "gallery" && files.length > 0 && (
-              <div className="mt-2">
-                <div className="text-xs text-muted-foreground mb-2">{files.length}개 이미지 · 미리보기</div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                  {files.map((f, i) => (
-                    <div key={i} className="relative aspect-square rounded-md border border-border overflow-hidden bg-secondary">
-                      <img src={URL.createObjectURL(f)} alt={f.name} className="absolute inset-0 w-full h-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => setFiles((prev) => prev.filter((_, idx) => idx !== i))}
-                        className="absolute top-1 right-1 h-6 w-6 rounded-full bg-black/70 text-white text-xs grid place-items-center hover:bg-black"
-                        aria-label="삭제"
-                      >
-                        ×
-                      </button>
-                      <div className="absolute bottom-0 inset-x-0 px-2 py-1 text-[10px] text-white bg-gradient-to-t from-black/80 to-transparent truncate">
-                        {f.name}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
             )}
             {category === "assignment" && (
               <p className="text-[11px] text-muted-foreground">학생이 다운로드 할 양식 파일을 첨부할 수 있습니다.</p>
             )}
-          </div>
+          </div>}
 
           {showNotify && (
             <div className="space-y-2 rounded-md border border-border p-3 bg-secondary/30">
@@ -287,46 +292,6 @@ function NewPostPage() {
           </div>
         </div>
 
-        {category === "gallery" && (
-          <div className="mt-8">
-            <div className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">게시글 미리보기</div>
-            <article className="rounded-lg border border-border bg-card p-6">
-              <h2 className="font-serif text-xl md:text-2xl font-bold text-primary">
-                {title.trim() || <span className="text-muted-foreground/60">(제목)</span>}
-              </h2>
-              <div className="mt-1 text-xs text-muted-foreground">
-                {profile.full_name} · 방금 전 · 사진 {files.length}장
-              </div>
-              {files.length > 0 ? (
-                <>
-                  <img
-                    src={URL.createObjectURL(files[0])}
-                    alt="대표 이미지"
-                    className="mt-4 w-full max-h-[480px] object-contain rounded-md border border-border bg-secondary"
-                  />
-                  {files.length > 1 && (
-                    <div className="mt-2 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
-                      {files.slice(1).map((f, i) => (
-                        <div key={i} className="relative aspect-square rounded-md overflow-hidden border border-border bg-secondary">
-                          <img src={URL.createObjectURL(f)} alt={f.name} className="absolute inset-0 w-full h-full object-cover" />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="mt-4 aspect-video grid place-items-center bg-secondary rounded-md text-muted-foreground text-sm">
-                  이미지를 첨부하면 여기에 표시됩니다
-                </div>
-              )}
-              {content.trim() && (
-                <div className="mt-6 pt-6 border-t border-border whitespace-pre-wrap text-sm leading-relaxed">
-                  {content}
-                </div>
-              )}
-            </article>
-          </div>
-        )}
       </main>
     </div>
   );

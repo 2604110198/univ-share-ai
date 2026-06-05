@@ -5,12 +5,23 @@ import { supabase } from "@/integrations/supabase/client";
 import { SiteHeader } from "@/components/site-header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { ArrowLeft, Trash2, ImageOff, Images, ChevronLeft, ChevronRight } from "lucide-react";
-import { galleryImageUrl } from "@/lib/attachments";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ArrowLeft, Trash2, ImageOff, Images, ChevronLeft, ChevronRight, Pencil } from "lucide-react";
+import { galleryImageUrl, uploadGalleryEditorImages } from "@/lib/attachments";
 import { formatPostDate } from "@/lib/format";
 import { toast } from "sonner";
 import { PostComments } from "@/components/post-comments";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  GalleryPostEditor,
+  createInitialGalleryBlocks,
+  ensureSingleCover,
+  parseGalleryDocument,
+  serializeGalleryDocument,
+  type GalleryEditorBlock,
+  type GalleryImageAlign,
+} from "@/components/gallery-post-editor";
 
 export const Route = createFileRoute("/gallery/$postId")({
   head: () => ({ meta: [{ title: "이미지 게시글 — 반도체장비소프트웨어학과" }] }),
@@ -18,7 +29,17 @@ export const Route = createFileRoute("/gallery/$postId")({
 });
 
 interface PostRow { id: string; title: string; content: string | null; author_name: string; author_id: string; created_at: string }
-interface ImgItem { id: string; url: string; name: string }
+interface ImgItem {
+  id: string;
+  url: string;
+  name: string;
+  storagePath: string;
+  widthPercent: number;
+  heightPx: number | null;
+  align: GalleryImageAlign;
+  isCover: boolean;
+  displayOrder: number;
+}
 
 function GalleryDetailPage() {
   const { postId } = Route.useParams();
@@ -28,12 +49,15 @@ function GalleryDetailPage() {
   const [images, setImages] = useState<ImgItem[]>([]);
   const [busy, setBusy] = useState(true);
   const [lightbox, setLightbox] = useState<number | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editBlocks, setEditBlocks] = useState<GalleryEditorBlock[]>([]);
+  const [editSaving, setEditSaving] = useState(false);
 
   useEffect(() => { if (!loading && !user) navigate({ to: "/login" }); }, [loading, user, navigate]);
 
-  useEffect(() => {
-    if (!user) return;
-    (async () => {
+  const loadPost = async () => {
+    setBusy(true);
       await supabase.rpc("increment_post_view", { _post_id: postId });
       const { data: p } = await supabase
         .from("posts")
@@ -42,24 +66,100 @@ function GalleryDetailPage() {
       setPost(p as PostRow | null);
       const { data: atts } = await supabase
         .from("post_attachments")
-        .select("id, file_name, storage_path")
+        .select("id, file_name, storage_path, width_percent, height_px, align, is_cover, display_order")
         .eq("post_id", postId)
+        .order("display_order", { ascending: true })
         .order("created_at", { ascending: true });
-      setImages((atts ?? []).map((a) => ({ id: a.id, name: a.file_name, url: galleryImageUrl(a.storage_path) })));
+      setImages((atts ?? []).map((a) => ({
+        id: a.id,
+        name: a.file_name,
+        storagePath: a.storage_path,
+        url: galleryImageUrl(a.storage_path),
+        widthPercent: a.width_percent ?? 100,
+        heightPx: a.height_px ?? null,
+        align: (a.align as GalleryImageAlign) ?? "center",
+        isCover: Boolean(a.is_cover),
+        displayOrder: a.display_order ?? 0,
+      })));
       setBusy(false);
-    })();
+  };
+
+  useEffect(() => {
+    if (!user) return;
+    loadPost();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, postId]);
 
   if (loading || busy) return <div className="min-h-screen grid place-items-center text-muted-foreground">불러오는 중...</div>;
   if (!user) return null;
 
-  const canDelete = post && (post.author_id === user.id || profile?.role === "admin");
+  const canManage = Boolean(post && (post.author_id === user.id || profile?.role === "admin"));
 
   const onDelete = async () => {
     if (!confirm("이 게시글을 삭제하시겠습니까?")) return;
     const { error } = await supabase.from("posts").delete().eq("id", postId);
     if (error) toast.error("삭제 실패", { description: error.message });
     else { toast.success("삭제되었습니다"); navigate({ to: "/gallery" }); }
+  };
+
+  const openEditor = () => {
+    if (!post) return;
+    setEditTitle(post.title);
+    setEditBlocks(createInitialGalleryBlocks(post.content, images));
+    setEditOpen(true);
+  };
+
+  const saveEdit = async () => {
+    if (!post || !user) return;
+    if (!editTitle.trim()) { toast.error("제목을 입력하세요"); return; }
+    const normalized = ensureSingleCover(editBlocks);
+    const imageBlocks = normalized.filter((block): block is Extract<GalleryEditorBlock, { type: "image" }> => block.type === "image");
+    if (imageBlocks.length === 0) { toast.error("이미지를 1개 이상 유지하세요"); return; }
+    setEditSaving(true);
+
+    const newImages = imageBlocks.filter((block) => block.file).map((block, index) => ({
+      localId: block.id,
+      file: block.file!,
+      widthPercent: block.widthPercent,
+      heightPx: block.heightPx,
+      align: block.align,
+      isCover: block.isCover,
+      displayOrder: index,
+    }));
+    const { uploaded, errors } = await uploadGalleryEditorImages({ postId: post.id, uploaderId: user.id, images: newImages });
+    const idByLocal = new Map(uploaded.map((item) => [item.localId, item.attachmentId]));
+    const finalBlocks = normalized.map((block): GalleryEditorBlock => {
+      if (block.type === "text") return block;
+      return { ...block, attachmentId: block.attachmentId ?? idByLocal.get(block.id) };
+    });
+    const finalImages = finalBlocks.filter((block): block is Extract<GalleryEditorBlock, { type: "image" }> => block.type === "image" && Boolean(block.attachmentId));
+    const usedIds = new Set(finalImages.map((block) => block.attachmentId!));
+
+    for (let index = 0; index < finalImages.length; index += 1) {
+      const block = finalImages[index];
+      await supabase.from("post_attachments").update({
+        width_percent: block.widthPercent,
+        height_px: block.heightPx,
+        align: block.align,
+        is_cover: block.isCover,
+        display_order: index,
+      }).eq("id", block.attachmentId!);
+    }
+
+    const removedIds = images.map((image) => image.id).filter((id) => !usedIds.has(id));
+    if (removedIds.length) await supabase.from("post_attachments").delete().in("id", removedIds);
+
+    const { error } = await supabase.from("posts").update({
+      title: editTitle.trim(),
+      content: serializeGalleryDocument(finalBlocks),
+    }).eq("id", post.id);
+
+    setEditSaving(false);
+    if (error) { toast.error("수정 실패", { description: error.message }); return; }
+    if (errors.length) toast.error("일부 이미지 업로드 실패", { description: errors.join("\n") });
+    toast.success("게시글을 수정했습니다");
+    setEditOpen(false);
+    loadPost();
   };
 
   const showPrev = () => setLightbox((i) => (i === null ? null : (i - 1 + images.length) % images.length));
@@ -88,10 +188,15 @@ function GalleryDetailPage() {
                 <Badge variant="outline" className="inline-flex items-center gap-1">
                   <Images className="h-3 w-3" /> 사진 {images.length}장
                 </Badge>
-                {canDelete && (
-                  <Button variant="outline" size="sm" onClick={onDelete}>
-                    <Trash2 className="h-4 w-4 mr-1" /> 삭제
-                  </Button>
+                {canManage && (
+                  <>
+                    <Button variant="outline" size="sm" onClick={openEditor}>
+                      <Pencil className="h-4 w-4 mr-1" /> 수정
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={onDelete}>
+                      <Trash2 className="h-4 w-4 mr-1" /> 삭제
+                    </Button>
+                  </>
                 )}
               </div>
             </div>
@@ -100,36 +205,13 @@ function GalleryDetailPage() {
               <div className="aspect-video grid place-items-center bg-secondary rounded-md text-muted-foreground">
                 <ImageOff className="h-8 w-8" />
               </div>
+            ) : post.content && parseGalleryDocument(post.content) ? (
+              <GalleryDocumentView content={post.content} images={images} onImageClick={setLightbox} />
             ) : (
-              <>
-                {/* Hero image */}
-                <button
-                  type="button"
-                  onClick={() => setLightbox(0)}
-                  className="block w-full rounded-md overflow-hidden border border-border bg-secondary"
-                >
-                  <img src={images[0].url} alt={images[0].name} className="w-full max-h-[560px] object-contain bg-black/5" />
-                </button>
-
-                {/* Grid of remaining images */}
-                {images.length > 1 && (
-                  <div className="mt-3 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
-                    {images.slice(1).map((img, idx) => (
-                      <button
-                        key={img.id}
-                        type="button"
-                        onClick={() => setLightbox(idx + 1)}
-                        className="relative aspect-square rounded-md overflow-hidden border border-border bg-secondary group"
-                      >
-                        <img src={img.url} alt={img.name} className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-105" loading="lazy" />
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </>
+              <LegacyGalleryView content={post.content} images={images} onImageClick={setLightbox} />
             )}
 
-            {post.content && (
+            {post.content && !parseGalleryDocument(post.content) && (
               <div className="mt-6 pt-6 border-t border-border whitespace-pre-wrap text-sm leading-relaxed">
                 {post.content}
               </div>
@@ -175,6 +257,92 @@ function GalleryDetailPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="max-w-5xl max-h-[92vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-serif">이미지 게시글 수정</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-5">
+            <div className="space-y-2">
+              <Label>제목</Label>
+              <Input value={editTitle} onChange={(event) => setEditTitle(event.target.value)} />
+            </div>
+            <GalleryPostEditor blocks={editBlocks} onChange={setEditBlocks} />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)}>취소</Button>
+            <Button onClick={saveEdit} disabled={editSaving}>{editSaving ? "저장 중..." : "저장"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function GalleryDocumentView({ content, images, onImageClick }: { content: string; images: ImgItem[]; onImageClick: (index: number) => void }) {
+  const blocks = parseGalleryDocument(content) ?? [];
+  const imageIndexById = new Map(images.map((image, index) => [image.id, index]));
+  const imageById = new Map(images.map((image) => [image.id, image]));
+
+  return (
+    <div className="space-y-4">
+      {blocks.map((block, index) => {
+        if (block.type === "text") {
+          return block.text.trim() ? <div key={index} className="whitespace-pre-wrap text-sm leading-relaxed">{block.text}</div> : null;
+        }
+        const image = imageById.get(block.attachmentId);
+        if (!image) return null;
+        return (
+          <GalleryImageBlock
+            key={index}
+            image={{
+              ...image,
+              widthPercent: block.widthPercent,
+              heightPx: block.heightPx,
+              align: block.align,
+              isCover: block.isCover,
+            }}
+            index={imageIndexById.get(image.id) ?? 0}
+            onImageClick={onImageClick}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+function LegacyGalleryView({ images, onImageClick }: { content: string | null; images: ImgItem[]; onImageClick: (index: number) => void }) {
+  return (
+    <>
+      <button type="button" onClick={() => onImageClick(0)} className="block w-full rounded-md overflow-hidden border border-border bg-secondary">
+        <img src={images[0].url} alt={images[0].name} className="w-full max-h-[560px] object-contain bg-secondary" />
+      </button>
+      {images.length > 1 && (
+        <div className="mt-3 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+          {images.slice(1).map((img, idx) => (
+            <button key={img.id} type="button" onClick={() => onImageClick(idx + 1)} className="relative aspect-square rounded-md overflow-hidden border border-border bg-secondary group">
+              <img src={img.url} alt={img.name} className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-105" loading="lazy" />
+            </button>
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
+function GalleryImageBlock({ image, index, onImageClick }: { image: ImgItem; index: number; onImageClick: (index: number) => void }) {
+  const justify = image.align === "left" ? "justify-start" : image.align === "right" ? "justify-end" : "justify-center";
+  return (
+    <div className={`flex ${justify}`}>
+      <button
+        type="button"
+        onClick={() => onImageClick(index)}
+        className="rounded-md overflow-hidden border border-border bg-secondary"
+        style={{ width: `${image.widthPercent}%`, height: image.heightPx ? `${image.heightPx}px` : undefined }}
+      >
+        <img src={image.url} alt={image.name} className="h-full w-full object-contain" loading="lazy" />
+      </button>
     </div>
   );
 }

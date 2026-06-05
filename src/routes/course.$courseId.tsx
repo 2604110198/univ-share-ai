@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ArrowLeft, BookOpen, Megaphone, FileText, FileUp, Plus, Pin, Pencil, ExternalLink, ImageIcon } from "lucide-react";
-import { formatPostDate, WEEKDAY_LABEL } from "@/lib/format";
+import { formatDate, WEEKDAY_LABEL } from "@/lib/format";
 import { galleryImageUrl } from "@/lib/attachments";
 import { toast } from "sonner";
 
@@ -51,6 +51,7 @@ function CoursePage() {
   const navigate = useNavigate();
   const [course, setCourse] = useState<Course | null>(null);
   const [notices, setNotices] = useState<NoticeItem[]>([]);
+  const [readPostIds, setReadPostIds] = useState<Set<string>>(new Set());
   const [materials, setMaterials] = useState<PostListItem[]>([]);
   const [assignments, setAssignments] = useState<PostListItem[]>([]);
   const [busy, setBusy] = useState(true);
@@ -89,7 +90,19 @@ function CoursePage() {
           .order("is_pinned", { ascending: false })
           .order("created_at", { ascending: false }),
       ]);
-      setNotices((noticeRes.data ?? []) as NoticeItem[]);
+      const courseNotices = (noticeRes.data ?? []) as NoticeItem[];
+      setNotices(courseNotices);
+      const noticeIds = courseNotices.map((notice) => notice.id);
+      if (noticeIds.length) {
+        const { data: reads } = await supabase
+          .from("post_reads")
+          .select("post_id")
+          .in("post_id", noticeIds)
+          .eq("user_id", user.id);
+        setReadPostIds(new Set((reads ?? []).map((read) => read.post_id)));
+      } else {
+        setReadPostIds(new Set());
+      }
       setMaterials((matRes.data ?? []) as PostListItem[]);
       setAssignments((assignRes.data ?? []) as PostListItem[]);
       setBusy(false);
@@ -103,6 +116,11 @@ function CoursePage() {
   const isOwningProf = profile.role === "professor" && course?.professor_id === profile.id;
   const canPostHere = isAdmin || isOwningProf;
   const canEditTextbook = isAdmin || isOwningProf || Boolean(profile.can_write_notice);
+
+  const markNoticeRead = async (postId: string) => {
+    setReadPostIds((prev) => new Set(prev).add(postId));
+    await supabase.rpc("mark_post_read", { _post_id: postId });
+  };
 
   const openTextbookEditor = () => {
     setTbTitle(course?.textbook_title ?? "");
@@ -193,17 +211,21 @@ function CoursePage() {
                 {notices.length === 0 ? (
                   <div className="p-8 text-center text-sm text-muted-foreground">등록된 공지가 없습니다.</div>
                 ) : (
-                  notices.map((n) => (
-                    <Link key={n.id} to="/post/$postId" params={{ postId: n.id }}
+                  notices.map((n) => {
+                    const isRead = readPostIds.has(n.id);
+                    return (
+                    <Link key={n.id} to="/post/$postId" params={{ postId: n.id }} onClick={() => void markNoticeRead(n.id)}
                       className={`flex items-center justify-between p-3 hover:bg-secondary/40 ${n.is_pinned ? "bg-muted/40" : ""}`}>
                       <div className="min-w-0 flex items-center gap-2">
                         {n.is_pinned && <Pin className="h-3 w-3 text-accent shrink-0" />}
-                        <span className={`truncate ${n.is_pinned ? "font-bold" : "font-medium"}`}>{n.title}</span>
+                        {!isRead && <span className="text-xs font-black text-accent shrink-0">New</span>}
+                        <span className={`truncate ${isRead ? "text-muted-foreground" : "text-foreground"} ${n.is_pinned ? "font-bold" : "font-medium"}`}>{n.title}</span>
                         <Badge variant="outline" className="ml-1 shrink-0">{n.author_name}</Badge>
                       </div>
-                      <span className="text-xs text-muted-foreground shrink-0 ml-3">{formatPostDate(n.created_at)}</span>
+                      <span className="text-xs text-muted-foreground shrink-0 ml-3">{formatDate(n.created_at)}</span>
                     </Link>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </section>

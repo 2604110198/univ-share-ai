@@ -40,8 +40,10 @@ function GalleryListPage() {
       if (ids.length) {
         const { data: atts } = await supabase
           .from("post_attachments")
-          .select("post_id, storage_path, created_at")
+          .select("post_id, storage_path, is_cover, display_order, created_at")
           .in("post_id", ids)
+          .order("is_cover", { ascending: false })
+          .order("display_order", { ascending: true })
           .order("created_at", { ascending: true });
         for (const a of atts ?? []) {
           if (!attMap.has(a.post_id)) attMap.set(a.post_id, galleryImageUrl(a.storage_path));

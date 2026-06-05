@@ -123,11 +123,9 @@ function Index() {
               <div className="mt-3 text-sm md:text-base tracking-[0.18em] uppercase text-primary-foreground/70 font-medium">
                 Semiconductor Equipment SW CTL
               </div>
-              <p className="mt-6 text-base md:text-lg text-primary-foreground/85 max-w-xl leading-relaxed break-keep">
-                강의 자료·과제·공지사항을 한 곳에서 공유하는 <span className="whitespace-nowrap">{DEPARTMENT_NAME}</span> 전용 디스크입니다.
-              </p>
-              <p className="mt-3 text-base md:text-lg text-primary-foreground/85 max-w-xl leading-relaxed break-keep">
-                교수와 학생 모두 강의실, 자료실, 과제, 1:1 문의를 편하게 이용할 수 있습니다.
+              <p className="mt-6 text-[13px] sm:text-base md:text-lg text-primary-foreground/85 max-w-none leading-relaxed break-keep">
+                <span className="block whitespace-nowrap">강의 자료·과제·공지사항을 한 곳에서 공유하는 반도체장비소프트웨어학과 전용 디스크입니다.</span>
+                <span className="block whitespace-nowrap mt-3">교수와 학생 모두 강의실, 자료실, 과제, 1:1 문의를 편하게 이용할 수 있습니다.</span>
               </p>
               <div className="mt-10 flex flex-wrap gap-3">
                 {user ? (
