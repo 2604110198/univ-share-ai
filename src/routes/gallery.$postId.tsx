@@ -21,7 +21,6 @@ import {
   serializeGalleryDocument,
   type GalleryEditorBlock,
   type GalleryImageAlign,
-  type GallerySavedBlock,
 } from "@/components/gallery-post-editor";
 
 export const Route = createFileRoute("/gallery/$postId")({
@@ -189,10 +188,15 @@ function GalleryDetailPage() {
                 <Badge variant="outline" className="inline-flex items-center gap-1">
                   <Images className="h-3 w-3" /> 사진 {images.length}장
                 </Badge>
-                {canDelete && (
-                  <Button variant="outline" size="sm" onClick={onDelete}>
-                    <Trash2 className="h-4 w-4 mr-1" /> 삭제
-                  </Button>
+                {canManage && (
+                  <>
+                    <Button variant="outline" size="sm" onClick={openEditor}>
+                      <Pencil className="h-4 w-4 mr-1" /> 수정
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={onDelete}>
+                      <Trash2 className="h-4 w-4 mr-1" /> 삭제
+                    </Button>
+                  </>
                 )}
               </div>
             </div>
@@ -201,36 +205,13 @@ function GalleryDetailPage() {
               <div className="aspect-video grid place-items-center bg-secondary rounded-md text-muted-foreground">
                 <ImageOff className="h-8 w-8" />
               </div>
+            ) : post.content && parseGalleryDocument(post.content) ? (
+              <GalleryDocumentView content={post.content} images={images} onImageClick={setLightbox} />
             ) : (
-              <>
-                {/* Hero image */}
-                <button
-                  type="button"
-                  onClick={() => setLightbox(0)}
-                  className="block w-full rounded-md overflow-hidden border border-border bg-secondary"
-                >
-                  <img src={images[0].url} alt={images[0].name} className="w-full max-h-[560px] object-contain bg-black/5" />
-                </button>
-
-                {/* Grid of remaining images */}
-                {images.length > 1 && (
-                  <div className="mt-3 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
-                    {images.slice(1).map((img, idx) => (
-                      <button
-                        key={img.id}
-                        type="button"
-                        onClick={() => setLightbox(idx + 1)}
-                        className="relative aspect-square rounded-md overflow-hidden border border-border bg-secondary group"
-                      >
-                        <img src={img.url} alt={img.name} className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-105" loading="lazy" />
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </>
+              <LegacyGalleryView content={post.content} images={images} onImageClick={setLightbox} />
             )}
 
-            {post.content && (
+            {post.content && !parseGalleryDocument(post.content) && (
               <div className="mt-6 pt-6 border-t border-border whitespace-pre-wrap text-sm leading-relaxed">
                 {post.content}
               </div>
@@ -276,6 +257,79 @@ function GalleryDetailPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="max-w-5xl max-h-[92vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-serif">이미지 게시글 수정</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-5">
+            <div className="space-y-2">
+              <Label>제목</Label>
+              <Input value={editTitle} onChange={(event) => setEditTitle(event.target.value)} />
+            </div>
+            <GalleryPostEditor blocks={editBlocks} onChange={setEditBlocks} />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditOpen(false)}>취소</Button>
+            <Button onClick={saveEdit} disabled={editSaving}>{editSaving ? "저장 중..." : "저장"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function GalleryDocumentView({ content, images, onImageClick }: { content: string; images: ImgItem[]; onImageClick: (index: number) => void }) {
+  const blocks = parseGalleryDocument(content) ?? [];
+  const imageIndexById = new Map(images.map((image, index) => [image.id, index]));
+  const imageById = new Map(images.map((image) => [image.id, image]));
+
+  return (
+    <div className="space-y-4">
+      {blocks.map((block, index) => {
+        if (block.type === "text") {
+          return block.text.trim() ? <div key={index} className="whitespace-pre-wrap text-sm leading-relaxed">{block.text}</div> : null;
+        }
+        const image = imageById.get(block.attachmentId);
+        if (!image) return null;
+        return <GalleryImageBlock key={index} image={{ ...image, ...block }} index={imageIndexById.get(image.id) ?? 0} onImageClick={onImageClick} />;
+      })}
+    </div>
+  );
+}
+
+function LegacyGalleryView({ images, onImageClick }: { content: string | null; images: ImgItem[]; onImageClick: (index: number) => void }) {
+  return (
+    <>
+      <button type="button" onClick={() => onImageClick(0)} className="block w-full rounded-md overflow-hidden border border-border bg-secondary">
+        <img src={images[0].url} alt={images[0].name} className="w-full max-h-[560px] object-contain bg-secondary" />
+      </button>
+      {images.length > 1 && (
+        <div className="mt-3 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+          {images.slice(1).map((img, idx) => (
+            <button key={img.id} type="button" onClick={() => onImageClick(idx + 1)} className="relative aspect-square rounded-md overflow-hidden border border-border bg-secondary group">
+              <img src={img.url} alt={img.name} className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-105" loading="lazy" />
+            </button>
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
+function GalleryImageBlock({ image, index, onImageClick }: { image: ImgItem; index: number; onImageClick: (index: number) => void }) {
+  const justify = image.align === "left" ? "justify-start" : image.align === "right" ? "justify-end" : "justify-center";
+  return (
+    <div className={`flex ${justify}`}>
+      <button
+        type="button"
+        onClick={() => onImageClick(index)}
+        className="rounded-md overflow-hidden border border-border bg-secondary"
+        style={{ width: `${image.widthPercent}%`, height: image.heightPx ? `${image.heightPx}px` : undefined }}
+      >
+        <img src={image.url} alt={image.name} className="h-full w-full object-contain" loading="lazy" />
+      </button>
     </div>
   );
 }
