@@ -5,12 +5,24 @@ import { supabase } from "@/integrations/supabase/client";
 import { SiteHeader } from "@/components/site-header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { ArrowLeft, Trash2, ImageOff, Images, ChevronLeft, ChevronRight } from "lucide-react";
-import { galleryImageUrl } from "@/lib/attachments";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ArrowLeft, Trash2, ImageOff, Images, ChevronLeft, ChevronRight, Pencil } from "lucide-react";
+import { galleryImageUrl, uploadGalleryEditorImages } from "@/lib/attachments";
 import { formatPostDate } from "@/lib/format";
 import { toast } from "sonner";
 import { PostComments } from "@/components/post-comments";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  GalleryPostEditor,
+  createInitialGalleryBlocks,
+  ensureSingleCover,
+  parseGalleryDocument,
+  serializeGalleryDocument,
+  type GalleryEditorBlock,
+  type GalleryImageAlign,
+  type GallerySavedBlock,
+} from "@/components/gallery-post-editor";
 
 export const Route = createFileRoute("/gallery/$postId")({
   head: () => ({ meta: [{ title: "이미지 게시글 — 반도체장비소프트웨어학과" }] }),
