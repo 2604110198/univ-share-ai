@@ -117,6 +117,11 @@ function CoursePage() {
   const canPostHere = isAdmin || isOwningProf;
   const canEditTextbook = isAdmin || isOwningProf || Boolean(profile.can_write_notice);
 
+  const markNoticeRead = async (postId: string) => {
+    setReadPostIds((prev) => new Set(prev).add(postId));
+    await supabase.rpc("mark_post_read", { _post_id: postId });
+  };
+
   const openTextbookEditor = () => {
     setTbTitle(course?.textbook_title ?? "");
     setTbInfo(course?.textbook_info ?? "");
@@ -206,17 +211,21 @@ function CoursePage() {
                 {notices.length === 0 ? (
                   <div className="p-8 text-center text-sm text-muted-foreground">등록된 공지가 없습니다.</div>
                 ) : (
-                  notices.map((n) => (
-                    <Link key={n.id} to="/post/$postId" params={{ postId: n.id }}
+                  notices.map((n) => {
+                    const isRead = readPostIds.has(n.id);
+                    return (
+                    <Link key={n.id} to="/post/$postId" params={{ postId: n.id }} onClick={() => void markNoticeRead(n.id)}
                       className={`flex items-center justify-between p-3 hover:bg-secondary/40 ${n.is_pinned ? "bg-muted/40" : ""}`}>
                       <div className="min-w-0 flex items-center gap-2">
                         {n.is_pinned && <Pin className="h-3 w-3 text-accent shrink-0" />}
-                        <span className={`truncate ${n.is_pinned ? "font-bold" : "font-medium"}`}>{n.title}</span>
+                        {!isRead && <span className="text-xs font-black text-accent shrink-0">New</span>}
+                        <span className={`truncate ${isRead ? "text-muted-foreground" : "text-foreground"} ${n.is_pinned ? "font-bold" : "font-medium"}`}>{n.title}</span>
                         <Badge variant="outline" className="ml-1 shrink-0">{n.author_name}</Badge>
                       </div>
-                      <span className="text-xs text-muted-foreground shrink-0 ml-3">{formatPostDate(n.created_at)}</span>
+                      <span className="text-xs text-muted-foreground shrink-0 ml-3">{formatDate(n.created_at)}</span>
                     </Link>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </section>
