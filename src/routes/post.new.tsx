@@ -13,8 +13,14 @@ import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
 import { ArrowLeft, Paperclip, FileEdit } from "lucide-react";
-import { uploadAttachments, uploadGalleryImages } from "@/lib/attachments";
+import { uploadAttachments, uploadGalleryEditorImages } from "@/lib/attachments";
 import type { Database } from "@/integrations/supabase/types";
+import {
+  GalleryPostEditor,
+  ensureSingleCover,
+  serializeGalleryDocument,
+  type GalleryEditorBlock,
+} from "@/components/gallery-post-editor";
 
 type CategoryParam = "material" | "assignment" | "notice" | "inquiry" | "gallery";
 const CATEGORY_LABEL: Record<CategoryParam, string> = {
@@ -51,6 +57,7 @@ function NewPostPage() {
   const [isPinned, setIsPinned] = useState(false);
   const [targetProf, setTargetProf] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+  const [galleryBlocks, setGalleryBlocks] = useState<GalleryEditorBlock[]>([{ id: "initial-text", type: "text", text: "" }]);
   const [notifyAudience, setNotifyAudience] = useState<NotifyAudience>("none");
   const [canPin, setCanPin] = useState(false);
   const [submitting, setSubmitting] = useState(false);
