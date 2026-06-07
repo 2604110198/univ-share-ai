@@ -29,7 +29,7 @@ function GalleryListPage() {
   useEffect(() => { if (!loading && !user) navigate({ to: "/login" }); }, [loading, user, navigate]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || pathname !== "/gallery") return;
     (async () => {
       const { data: posts } = await supabase
         .from("posts")
@@ -56,7 +56,7 @@ function GalleryListPage() {
       })));
       setBusy(false);
     })();
-  }, [user]);
+  }, [user, pathname]);
 
   const totalPages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
   const pageItems = useMemo(() => items.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), [items, page]);
