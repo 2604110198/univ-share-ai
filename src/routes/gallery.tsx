@@ -37,7 +37,7 @@ function GalleryListPage() {
         .eq("category", "gallery")
         .order("created_at", { ascending: false });
       const ids = (posts ?? []).map((p) => p.id);
-      let attMap = new Map<string, string>();
+      const attMap = new Map<string, string>();
       if (ids.length) {
         const { data: atts } = await supabase
           .from("post_attachments")
