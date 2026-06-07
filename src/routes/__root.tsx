@@ -2,7 +2,7 @@ import { Outlet, Link, createRootRoute, HeadContent, Scripts } from "@tanstack/r
 import { AuthProvider } from "@/lib/auth-context";
 import { Toaster } from "@/components/ui/sonner";
 
-import "../styles.css";
+import "../styles.css?url";
 
 function NotFoundComponent() {
   return (
@@ -33,6 +33,7 @@ export const Route = createRootRoute({
       { name: "description", content: "학생과 교수가 안전하게 파일을 공유하고 과제를 제출하는 대학 인터넷 디스크" },
     ],
     links: [
+      { rel: "stylesheet", href: "/@tanstack-start/styles.css?routes=__root__%2C%2F" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
