@@ -26,8 +26,6 @@ function GalleryListPage() {
   const [busy, setBusy] = useState(true);
   const [page, setPage] = useState(1);
 
-  if (pathname !== "/gallery") return <Outlet />;
-
   useEffect(() => { if (!loading && !user) navigate({ to: "/login" }); }, [loading, user, navigate]);
 
   useEffect(() => {
@@ -65,6 +63,7 @@ function GalleryListPage() {
 
   if (loading) return <div className="min-h-screen grid place-items-center text-muted-foreground">불러오는 중...</div>;
   if (!user) return null;
+  if (pathname !== "/gallery") return <Outlet />;
   const canWrite = profile?.role === "professor" || profile?.role === "admin";
 
   return (
