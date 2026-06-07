@@ -284,6 +284,8 @@ function GalleryDocumentView({ content, images, onImageClick }: { content: strin
   const blocks = parseGalleryDocument(content) ?? [];
   const imageIndexById = new Map(images.map((image, index) => [image.id, index]));
   const imageById = new Map(images.map((image) => [image.id, image]));
+  const renderedImageIds = new Set(blocks.filter((block) => block.type === "image").map((block) => block.attachmentId));
+  const remainingImages = images.filter((image) => !renderedImageIds.has(image.id));
 
   return (
     <div className="space-y-4">
@@ -308,6 +310,14 @@ function GalleryDocumentView({ content, images, onImageClick }: { content: strin
           />
         );
       })}
+      {remainingImages.map((image) => (
+        <GalleryImageBlock
+          key={image.id}
+          image={image}
+          index={imageIndexById.get(image.id) ?? 0}
+          onImageClick={onImageClick}
+        />
+      ))}
     </div>
   );
 }
