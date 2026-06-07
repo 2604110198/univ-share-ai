@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,9 +21,12 @@ interface Item { id: string; title: string; author_name: string; created_at: str
 function GalleryListPage() {
   const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
   const [items, setItems] = useState<Item[]>([]);
   const [busy, setBusy] = useState(true);
   const [page, setPage] = useState(1);
+
+  if (pathname !== "/gallery") return <Outlet />;
 
   useEffect(() => { if (!loading && !user) navigate({ to: "/login" }); }, [loading, user, navigate]);
 
