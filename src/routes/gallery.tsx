@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,6 +21,7 @@ interface Item { id: string; title: string; author_name: string; created_at: str
 function GalleryListPage() {
   const { user, profile, loading } = useAuth();
   const navigate = useNavigate();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
   const [items, setItems] = useState<Item[]>([]);
   const [busy, setBusy] = useState(true);
   const [page, setPage] = useState(1);
@@ -28,7 +29,7 @@ function GalleryListPage() {
   useEffect(() => { if (!loading && !user) navigate({ to: "/login" }); }, [loading, user, navigate]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || pathname !== "/gallery") return;
     (async () => {
       const { data: posts } = await supabase
         .from("posts")
@@ -36,7 +37,7 @@ function GalleryListPage() {
         .eq("category", "gallery")
         .order("created_at", { ascending: false });
       const ids = (posts ?? []).map((p) => p.id);
-      let attMap = new Map<string, string>();
+      const attMap = new Map<string, string>();
       if (ids.length) {
         const { data: atts } = await supabase
           .from("post_attachments")
@@ -55,13 +56,14 @@ function GalleryListPage() {
       })));
       setBusy(false);
     })();
-  }, [user]);
+  }, [user, pathname]);
 
   const totalPages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
   const pageItems = useMemo(() => items.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), [items, page]);
 
   if (loading) return <div className="min-h-screen grid place-items-center text-muted-foreground">불러오는 중...</div>;
   if (!user) return null;
+  if (pathname !== "/gallery") return <Outlet />;
   const canWrite = profile?.role === "professor" || profile?.role === "admin";
 
   return (

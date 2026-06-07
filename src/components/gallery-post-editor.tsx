@@ -151,12 +151,20 @@ interface GalleryPostEditorProps {
 
 export function GalleryPostEditor({ blocks, onChange }: GalleryPostEditorProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const insertIndexRef = useRef(0);
+  const insertTargetRef = useRef<{ type: "index"; index: number } | { type: "text"; blockId: string; start: number; end: number }>({ type: "index", index: 0 });
+  const activeTextSelectionRef = useRef<{ blockId: string; start: number; end: number } | null>(null);
   const editorRef = useRef<HTMLDivElement | null>(null);
   const selected = blocks.find((block) => block.type === "image" && block.isCover) ?? blocks.find((block) => block.type === "image");
 
   const openFilePicker = (index = blocks.length) => {
-    insertIndexRef.current = index;
+    insertTargetRef.current = { type: "index", index };
+    fileInputRef.current?.click();
+  };
+
+  const openFilePickerAtCursor = () => {
+    insertTargetRef.current = activeTextSelectionRef.current
+      ? { type: "text", ...activeTextSelectionRef.current }
+      : { type: "index", index: blocks.length };
     fileInputRef.current?.click();
   };
 
@@ -175,8 +183,29 @@ export function GalleryPostEditor({ blocks, onChange }: GalleryPostEditorProps) 
       align: "center",
       isCover: !hasCover && index === 0,
     }));
-    const next = [...blocks];
-    next.splice(insertIndexRef.current, 0, ...imageBlocks);
+    const target = insertTargetRef.current;
+    let next = [...blocks];
+    if (target.type === "text") {
+      const textIndex = blocks.findIndex((block) => block.id === target.blockId && block.type === "text");
+      const textBlock = blocks[textIndex];
+      if (textIndex >= 0 && textBlock?.type === "text") {
+        const start = clamp(target.start, 0, textBlock.text.length);
+        const end = clamp(target.end, start, textBlock.text.length);
+        const before = textBlock.text.slice(0, start);
+        const after = textBlock.text.slice(end);
+        next = [
+          ...blocks.slice(0, textIndex),
+          { ...textBlock, text: before },
+          ...imageBlocks,
+          { id: newId(), type: "text" as const, text: after },
+          ...blocks.slice(textIndex + 1),
+        ];
+      } else {
+        next.splice(blocks.length, 0, ...imageBlocks);
+      }
+    } else {
+      next.splice(target.index, 0, ...imageBlocks);
+    }
     const withTextTail = next[next.length - 1]?.type === "text" ? next : [...next, { id: newId(), type: "text" as const, text: "" }];
     onChange(ensureSingleCover(withTextTail));
   };
@@ -219,7 +248,7 @@ export function GalleryPostEditor({ blocks, onChange }: GalleryPostEditorProps) 
     <div className="space-y-4">
       <div className="flex items-center justify-between rounded-md border border-border bg-secondary/30 px-3 py-2">
         <div className="text-sm font-medium">내용 작성</div>
-        <Button type="button" size="sm" variant="outline" onClick={() => openFilePicker(blocks.length)}>
+        <Button type="button" size="sm" variant="outline" onClick={openFilePickerAtCursor}>
           <ImagePlus className="h-4 w-4 mr-1" /> 이미지 추가
         </Button>
         <input
@@ -291,6 +320,10 @@ export function GalleryPostEditor({ blocks, onChange }: GalleryPostEditorProps) 
               <Textarea
                 value={block.text}
                 onChange={(event) => updateBlock(block.id, (current) => current.type === "text" ? { ...current, text: event.target.value } : current)}
+                onFocus={(event) => { activeTextSelectionRef.current = { blockId: block.id, start: event.currentTarget.selectionStart, end: event.currentTarget.selectionEnd }; }}
+                onClick={(event) => { activeTextSelectionRef.current = { blockId: block.id, start: event.currentTarget.selectionStart, end: event.currentTarget.selectionEnd }; }}
+                onKeyUp={(event) => { activeTextSelectionRef.current = { blockId: block.id, start: event.currentTarget.selectionStart, end: event.currentTarget.selectionEnd }; }}
+                onSelect={(event) => { activeTextSelectionRef.current = { blockId: block.id, start: event.currentTarget.selectionStart, end: event.currentTarget.selectionEnd }; }}
                 rows={4}
                 className="min-h-24 resize-y border-dashed"
                 placeholder="이미지 앞뒤로 내용을 작성할 수 있습니다."

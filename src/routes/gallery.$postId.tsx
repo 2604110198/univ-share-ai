@@ -284,6 +284,8 @@ function GalleryDocumentView({ content, images, onImageClick }: { content: strin
   const blocks = parseGalleryDocument(content) ?? [];
   const imageIndexById = new Map(images.map((image, index) => [image.id, index]));
   const imageById = new Map(images.map((image) => [image.id, image]));
+  const renderedImageIds = new Set(blocks.filter((block) => block.type === "image").map((block) => block.attachmentId));
+  const remainingImages = images.filter((image) => !renderedImageIds.has(image.id));
 
   return (
     <div className="space-y-4">
@@ -308,26 +310,27 @@ function GalleryDocumentView({ content, images, onImageClick }: { content: strin
           />
         );
       })}
+      {remainingImages.map((image) => (
+        <GalleryImageBlock
+          key={image.id}
+          image={image}
+          index={imageIndexById.get(image.id) ?? 0}
+          onImageClick={onImageClick}
+        />
+      ))}
     </div>
   );
 }
 
 function LegacyGalleryView({ images, onImageClick }: { content: string | null; images: ImgItem[]; onImageClick: (index: number) => void }) {
   return (
-    <>
-      <button type="button" onClick={() => onImageClick(0)} className="block w-full rounded-md overflow-hidden border border-border bg-secondary">
-        <img src={images[0].url} alt={images[0].name} className="w-full max-h-[560px] object-contain bg-secondary" />
-      </button>
-      {images.length > 1 && (
-        <div className="mt-3 grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
-          {images.slice(1).map((img, idx) => (
-            <button key={img.id} type="button" onClick={() => onImageClick(idx + 1)} className="relative aspect-square rounded-md overflow-hidden border border-border bg-secondary group">
-              <img src={img.url} alt={img.name} className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-105" loading="lazy" />
-            </button>
-          ))}
-        </div>
-      )}
-    </>
+    <div className="space-y-4">
+      {images.map((img, idx) => (
+        <button key={img.id} type="button" onClick={() => onImageClick(idx)} className="block w-full rounded-md overflow-hidden border border-border bg-secondary">
+          <img src={img.url} alt={img.name} className="w-full max-h-[720px] object-contain bg-secondary" loading="lazy" />
+        </button>
+      ))}
+    </div>
   );
 }
 
