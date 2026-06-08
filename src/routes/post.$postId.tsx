@@ -190,9 +190,13 @@ function PostPage() {
           </header>
 
           <div className="p-6">
-            <div className="prose prose-sm max-w-none whitespace-pre-wrap text-foreground">
-              {post.content || <span className="text-muted-foreground">내용이 없습니다.</span>}
-            </div>
+            {editing ? (
+              <Textarea value={editContent} onChange={(e) => setEditContent(e.target.value)} rows={10} placeholder="내용을 입력하세요" />
+            ) : (
+              <div className="prose prose-sm max-w-none whitespace-pre-wrap text-foreground">
+                {post.content || <span className="text-muted-foreground">내용이 없습니다.</span>}
+              </div>
+            )}
 
             {attachments.length > 0 && (
               <div className="mt-6 pt-4 border-t border-border">
