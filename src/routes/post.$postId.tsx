@@ -6,10 +6,11 @@ import { SiteHeader } from "@/components/site-header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { ArrowLeft, Download, Eye, Trash2, Paperclip, FileUp } from "lucide-react";
+import { ArrowLeft, Download, Eye, Trash2, Paperclip, FileUp, Pencil, Check, X } from "lucide-react";
 import { formatBytes, formatDate, ROLE_LABEL } from "@/lib/format";
 import { downloadAttachment, uploadAttachments } from "@/lib/attachments";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { PostComments } from "@/components/post-comments";
 
 export const Route = createFileRoute("/post/$postId")({
