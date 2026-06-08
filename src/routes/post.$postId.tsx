@@ -45,6 +45,12 @@ function PostPage() {
   const [submitFiles, setSubmitFiles] = useState<File[]>([]);
   const [submittingAns, setSubmittingAns] = useState(false);
 
+  // edit mode
+  const [editing, setEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editContent, setEditContent] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
+
   useEffect(() => { if (!loading && !user) navigate({ to: "/login" }); }, [loading, user, navigate]);
 
   const load = async () => {
