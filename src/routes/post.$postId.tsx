@@ -167,7 +167,11 @@ function PostPage() {
               {courseName && <Badge variant="outline">{courseName}</Badge>}
               {post.is_pinned && <Badge className="bg-accent text-accent-foreground">고정</Badge>}
             </div>
-            <h1 className="font-serif text-2xl md:text-3xl font-bold text-primary mb-3">{post.title}</h1>
+            {editing ? (
+              <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="mb-3 text-2xl font-bold" />
+            ) : (
+              <h1 className="font-serif text-2xl md:text-3xl font-bold text-primary mb-3">{post.title}</h1>
+            )}
             <div className="flex items-center justify-between text-xs text-muted-foreground">
               <div>
                 <span className="font-medium text-foreground">{post.author_name}</span>
