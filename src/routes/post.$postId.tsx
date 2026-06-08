@@ -113,6 +113,27 @@ function PostPage() {
     navigate({ to: "/dashboard" });
   };
 
+  const beginEdit = () => {
+    if (!post) return;
+    setEditTitle(post.title);
+    setEditContent(post.content ?? "");
+    setEditing(true);
+  };
+  const cancelEdit = () => setEditing(false);
+  const saveEdit = async () => {
+    if (!post) return;
+    if (!editTitle.trim()) { toast.error("제목을 입력하세요"); return; }
+    setSavingEdit(true);
+    const { error } = await supabase.from("posts")
+      .update({ title: editTitle.trim(), content: editContent.trim() || null })
+      .eq("id", post.id);
+    setSavingEdit(false);
+    if (error) { toast.error("수정 실패", { description: error.message }); return; }
+    toast.success("수정되었습니다");
+    setEditing(false);
+    load();
+  };
+
   if (loading || busy || !post) {
     return (
       <div className="min-h-screen flex flex-col">
