@@ -223,10 +223,22 @@ function PostPage() {
           </div>
 
           {canDelete && (
-            <footer className="border-t border-border p-4 flex justify-end">
-              <Button variant="outline" size="sm" onClick={deletePost} className="text-destructive">
-                <Trash2 className="h-4 w-4 mr-1" /> {isAdmin && !isOwner ? "강제 삭제" : "삭제"}
-              </Button>
+            <footer className="border-t border-border p-4 flex justify-end gap-2">
+              {editing ? (
+                <>
+                  <Button variant="outline" size="sm" onClick={cancelEdit}><X className="h-4 w-4 mr-1" /> 취소</Button>
+                  <Button size="sm" onClick={saveEdit} disabled={savingEdit}><Check className="h-4 w-4 mr-1" /> {savingEdit ? "저장 중..." : "저장"}</Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="outline" size="sm" onClick={beginEdit}>
+                    <Pencil className="h-4 w-4 mr-1" /> 수정
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={deletePost} className="text-destructive">
+                    <Trash2 className="h-4 w-4 mr-1" /> {isAdmin && !isOwner ? "강제 삭제" : "삭제"}
+                  </Button>
+                </>
+              )}
             </footer>
           )}
         </article>
