@@ -114,8 +114,8 @@ function Index() {
                 </div>
               )}
               <h1
-                className="text-4xl md:text-6xl font-bold leading-[1.15] break-keep tracking-tight"
-                style={{ fontFamily: '"Black Han Sans", "Jua", "Noto Sans KR", sans-serif', letterSpacing: "0.01em" }}
+                className="text-4xl md:text-6xl leading-[1.15] break-keep tracking-tight"
+                style={{ fontFamily: '"Jua", "Noto Sans KR", sans-serif', fontWeight: 500, letterSpacing: "0.01em" }}
               >
                 <span className="whitespace-nowrap">{DEPARTMENT_NAME} </span>
                 <span className="text-accent whitespace-nowrap">CTL</span>
