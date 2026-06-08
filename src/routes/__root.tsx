@@ -29,8 +29,16 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Campus Drive — 대학 파일 공유 플랫폼" },
-      { name: "description", content: "학생과 교수가 안전하게 파일을 공유하고 과제를 제출하는 대학 인터넷 디스크" },
+      { title: "한국폴리텍대학 반도체융합캡퍼스 반도체장비SW학과 CTL" },
+      { name: "description", content: "한국폴리텍대학교 반도체융합캠퍼스 반도체장비소프트웨어학과 전용 CTL 사이트입니다." },
+      { property: "og:title", content: "한국폴리텍대학 반도체융합캡퍼스 반도체장비SW학과 CTL" },
+      { name: "twitter:title", content: "한국폴리텍대학 반도체융합캡퍼스 반도체장비SW학과 CTL" },
+      { property: "og:description", content: "한국폴리텍대학교 반도체융합캠퍼스 반도체장비소프트웨어학과 전용 CTL 사이트입니다." },
+      { name: "twitter:description", content: "한국폴리텍대학교 반도체융합캠퍼스 반도체장비소프트웨어학과 전용 CTL 사이트입니다." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/4a47c928-5a29-40f9-a81e-3a69214aed60/id-preview-62dc67df--0a2b8ceb-1088-4e33-920e-83c7940a7217.lovable.app-1780924961950.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/4a47c928-5a29-40f9-a81e-3a69214aed60/id-preview-62dc67df--0a2b8ceb-1088-4e33-920e-83c7940a7217.lovable.app-1780924961950.png" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { property: "og:type", content: "website" },
     ],
     links: [
       { rel: "stylesheet", href: "/@tanstack-start/styles.css?routes=__root__%2C%2F" },
