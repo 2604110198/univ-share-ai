@@ -13,7 +13,8 @@ export async function uploadAttachments(opts: {
       continue;
     }
     const ext = file.name.includes(".") ? file.name.slice(file.name.lastIndexOf(".")) : "";
-    const path = `${opts.postId}/${crypto.randomUUID()}${ext}`;
+    // path must be `${postId}/${uploaderId}/...` to satisfy storage RLS (foldername[2] = auth.uid())
+    const path = `${opts.postId}/${opts.uploaderId}/${crypto.randomUUID()}${ext}`;
     const { error: upErr } = await supabase.storage.from("course-files").upload(path, file, {
       contentType: file.type || "application/octet-stream",
       upsert: false,

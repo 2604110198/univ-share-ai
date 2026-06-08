@@ -6,10 +6,11 @@ import { SiteHeader } from "@/components/site-header";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { ArrowLeft, Download, Eye, Trash2, Paperclip, FileUp } from "lucide-react";
+import { ArrowLeft, Download, Eye, Trash2, Paperclip, FileUp, Pencil, Check, X } from "lucide-react";
 import { formatBytes, formatDate, ROLE_LABEL } from "@/lib/format";
 import { downloadAttachment, uploadAttachments } from "@/lib/attachments";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { PostComments } from "@/components/post-comments";
 
 export const Route = createFileRoute("/post/$postId")({
@@ -43,6 +44,12 @@ function PostPage() {
   const [submitTitle, setSubmitTitle] = useState("");
   const [submitFiles, setSubmitFiles] = useState<File[]>([]);
   const [submittingAns, setSubmittingAns] = useState(false);
+
+  // edit mode
+  const [editing, setEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState("");
+  const [editContent, setEditContent] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
 
   useEffect(() => { if (!loading && !user) navigate({ to: "/login" }); }, [loading, user, navigate]);
 
@@ -106,6 +113,27 @@ function PostPage() {
     navigate({ to: "/dashboard" });
   };
 
+  const beginEdit = () => {
+    if (!post) return;
+    setEditTitle(post.title);
+    setEditContent(post.content ?? "");
+    setEditing(true);
+  };
+  const cancelEdit = () => setEditing(false);
+  const saveEdit = async () => {
+    if (!post) return;
+    if (!editTitle.trim()) { toast.error("제목을 입력하세요"); return; }
+    setSavingEdit(true);
+    const { error } = await supabase.from("posts")
+      .update({ title: editTitle.trim(), content: editContent.trim() || null })
+      .eq("id", post.id);
+    setSavingEdit(false);
+    if (error) { toast.error("수정 실패", { description: error.message }); return; }
+    toast.success("수정되었습니다");
+    setEditing(false);
+    load();
+  };
+
   if (loading || busy || !post) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -139,7 +167,11 @@ function PostPage() {
               {courseName && <Badge variant="outline">{courseName}</Badge>}
               {post.is_pinned && <Badge className="bg-accent text-accent-foreground">고정</Badge>}
             </div>
-            <h1 className="font-serif text-2xl md:text-3xl font-bold text-primary mb-3">{post.title}</h1>
+            {editing ? (
+              <Input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} className="mb-3 text-2xl font-bold" />
+            ) : (
+              <h1 className="font-serif text-2xl md:text-3xl font-bold text-primary mb-3">{post.title}</h1>
+            )}
             <div className="flex items-center justify-between text-xs text-muted-foreground">
               <div>
                 <span className="font-medium text-foreground">{post.author_name}</span>
@@ -158,9 +190,13 @@ function PostPage() {
           </header>
 
           <div className="p-6">
-            <div className="prose prose-sm max-w-none whitespace-pre-wrap text-foreground">
-              {post.content || <span className="text-muted-foreground">내용이 없습니다.</span>}
-            </div>
+            {editing ? (
+              <Textarea value={editContent} onChange={(e) => setEditContent(e.target.value)} rows={10} placeholder="내용을 입력하세요" />
+            ) : (
+              <div className="prose prose-sm max-w-none whitespace-pre-wrap text-foreground">
+                {post.content || <span className="text-muted-foreground">내용이 없습니다.</span>}
+              </div>
+            )}
 
             {attachments.length > 0 && (
               <div className="mt-6 pt-4 border-t border-border">
@@ -187,10 +223,22 @@ function PostPage() {
           </div>
 
           {canDelete && (
-            <footer className="border-t border-border p-4 flex justify-end">
-              <Button variant="outline" size="sm" onClick={deletePost} className="text-destructive">
-                <Trash2 className="h-4 w-4 mr-1" /> {isAdmin && !isOwner ? "강제 삭제" : "삭제"}
-              </Button>
+            <footer className="border-t border-border p-4 flex justify-end gap-2">
+              {editing ? (
+                <>
+                  <Button variant="outline" size="sm" onClick={cancelEdit}><X className="h-4 w-4 mr-1" /> 취소</Button>
+                  <Button size="sm" onClick={saveEdit} disabled={savingEdit}><Check className="h-4 w-4 mr-1" /> {savingEdit ? "저장 중..." : "저장"}</Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="outline" size="sm" onClick={beginEdit}>
+                    <Pencil className="h-4 w-4 mr-1" /> 수정
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={deletePost} className="text-destructive">
+                    <Trash2 className="h-4 w-4 mr-1" /> {isAdmin && !isOwner ? "강제 삭제" : "삭제"}
+                  </Button>
+                </>
+              )}
             </footer>
           )}
         </article>
