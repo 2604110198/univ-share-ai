@@ -223,9 +223,9 @@ export function SiteHeader() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel>
-                    <div className="font-medium">{profile.full_name}</div>
+                    <div className={cn("font-medium", dropdownNameColor)}>{profile.full_name}</div>
                     <div className="text-xs text-muted-foreground font-normal">
-                      {ROLE_LABEL[profile.role]}
+                      {profile.role === "student" && profile.can_write_notice ? "과대표" : ROLE_LABEL[profile.role]}
                       {profile.student_id ? ` · ${profile.student_id}` : ` · ${profile.email}`}
                     </div>
                   </DropdownMenuLabel>
