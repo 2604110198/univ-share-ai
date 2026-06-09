@@ -120,7 +120,9 @@ export function SiteHeader() {
           <div className="flex items-center gap-3 opacity-95">
             {user && profile ? (
               <>
-                <span className="hidden sm:inline font-semibold text-primary-foreground">{greeting}</span>
+                <span className="hidden sm:inline font-semibold">
+                  <span className={nameColor}>{profile.full_name}</span>{roleSuffix}
+                </span>
                 <span className="opacity-60">|</span>
                 <Link to="/profile" className="hover:underline">개인정보 수정</Link>
                 <span className="opacity-60">|</span>
