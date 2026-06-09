@@ -217,7 +217,7 @@ export function SiteHeader() {
                     <div className="h-7 w-7 rounded-full bg-primary text-primary-foreground grid place-items-center text-xs font-bold">
                       {profile.full_name.slice(0, 1)}
                     </div>
-                    <span className="hidden sm:inline text-sm font-medium">{profile.full_name}</span>
+                    <span className={cn("hidden sm:inline text-sm font-medium", dropdownNameColor)}>{profile.full_name}</span>
                     <ChevronDown className="h-3 w-3 text-muted-foreground" />
                   </button>
                 </DropdownMenuTrigger>
