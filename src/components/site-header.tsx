@@ -81,13 +81,35 @@ export function SiteHeader() {
     }
   };
 
-  const greeting = profile
+  const nameColor = profile
     ? profile.role === "admin"
-      ? `${profile.full_name} 관리자님 환영합니다`
+      ? "text-red-400"
       : profile.role === "professor"
-        ? `${profile.full_name} 교수님 환영합니다`
-        : `${profile.full_name}님 환영합니다`
-    : null;
+        ? "text-blue-300"
+        : (profile.role === "student" && profile.can_write_notice)
+          ? "text-orange-300"
+          : "text-primary-foreground"
+    : "text-primary-foreground";
+
+  const dropdownNameColor = profile
+    ? profile.role === "admin"
+      ? "text-red-600"
+      : profile.role === "professor"
+        ? "text-blue-600"
+        : (profile.role === "student" && profile.can_write_notice)
+          ? "text-orange-500"
+          : "text-foreground"
+    : "text-foreground";
+
+  const roleSuffix = profile
+    ? profile.role === "admin"
+      ? " 관리자님 환영합니다"
+      : profile.role === "professor"
+        ? " 교수님 환영합니다"
+        : (profile.role === "student" && profile.can_write_notice)
+          ? " 과대표님 환영합니다"
+          : "님 환영합니다"
+    : "";
 
   return (
     <header className="border-b border-border bg-card sticky top-0 z-30 shadow-paper">
