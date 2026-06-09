@@ -329,14 +329,21 @@ function UsersPanel() {
               <th className="text-left p-3 font-medium">이름</th>
               <th className="text-left p-3 font-medium">학번 / 이메일</th>
               <th className="text-left p-3 font-medium">역할</th>
-              <th className="text-left p-3 font-medium">공지 작성 권한</th>
+              <th className="text-left p-3 font-medium">과대표 지정</th>
               <th className="text-left p-3 font-medium">가입일</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
             {rows.map((r) => (
               <tr key={r.id} className="hover:bg-secondary/40">
-                <td className="p-3 font-medium">{r.full_name}</td>
+                <td className="p-3 font-medium">
+                  <span className={
+                    r.role === "admin" ? "text-red-600" :
+                    r.role === "professor" ? "text-blue-600" :
+                    (r.role === "student" && r.can_write_notice) ? "text-orange-500" :
+                    "text-foreground"
+                  }>{r.full_name}</span>
+                </td>
                 <td className="p-3 text-xs">
                   {r.student_id ? (
                     <span className="font-mono">{r.student_id}</span>
@@ -346,18 +353,19 @@ function UsersPanel() {
                 </td>
                 <td className="p-3">
                   <Badge variant={r.role === "admin" ? "default" : "secondary"}>
-                    {ROLE_LABEL[r.role] ?? r.role}
+                    {r.role === "student" && r.can_write_notice ? "과대표" : (ROLE_LABEL[r.role] ?? r.role)}
                   </Badge>
                 </td>
                 <td className="p-3">
                   {r.role === "admin" || r.role === "professor" ? (
-                    <span className="text-xs text-muted-foreground">기본 권한</span>
+                    <span className="text-xs text-muted-foreground">해당 없음</span>
                   ) : r.role === "student" ? (
                     <button
                       onClick={() => toggleNoticeWrite(r.id, !r.can_write_notice)}
-                      className={`text-[11px] px-2 py-1 rounded border ${r.can_write_notice ? "bg-accent/20 border-accent/40 text-accent-foreground" : "border-border text-muted-foreground hover:bg-secondary"}`}
+                      className={`text-[11px] px-2 py-1 rounded border ${r.can_write_notice ? "bg-orange-500/15 border-orange-400/50 text-orange-600" : "border-border text-muted-foreground hover:bg-secondary"}`}
+                      title="과대표: 공지 작성 / 교재 정보 / 강의 자료 / 과제 등록 권한"
                     >
-                      {r.can_write_notice ? "작성 가능 (해제)" : "작성 권한 부여"}
+                      {r.can_write_notice ? "과대표 해제" : "과대표 지정"}
                     </button>
                   ) : (
                     <span className="text-xs text-muted-foreground">—</span>

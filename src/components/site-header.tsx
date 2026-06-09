@@ -81,13 +81,35 @@ export function SiteHeader() {
     }
   };
 
-  const greeting = profile
+  const nameColor = profile
     ? profile.role === "admin"
-      ? `${profile.full_name} 관리자님 환영합니다`
+      ? "text-red-400"
       : profile.role === "professor"
-        ? `${profile.full_name} 교수님 환영합니다`
-        : `${profile.full_name}님 환영합니다`
-    : null;
+        ? "text-blue-300"
+        : (profile.role === "student" && profile.can_write_notice)
+          ? "text-orange-300"
+          : "text-primary-foreground"
+    : "text-primary-foreground";
+
+  const dropdownNameColor = profile
+    ? profile.role === "admin"
+      ? "text-red-600"
+      : profile.role === "professor"
+        ? "text-blue-600"
+        : (profile.role === "student" && profile.can_write_notice)
+          ? "text-orange-500"
+          : "text-foreground"
+    : "text-foreground";
+
+  const roleSuffix = profile
+    ? profile.role === "admin"
+      ? " 관리자님 환영합니다"
+      : profile.role === "professor"
+        ? " 교수님 환영합니다"
+        : (profile.role === "student" && profile.can_write_notice)
+          ? " 과대표님 환영합니다"
+          : "님 환영합니다"
+    : "";
 
   return (
     <header className="border-b border-border bg-card sticky top-0 z-30 shadow-paper">
@@ -98,7 +120,9 @@ export function SiteHeader() {
           <div className="flex items-center gap-3 opacity-95">
             {user && profile ? (
               <>
-                <span className="hidden sm:inline font-semibold text-primary-foreground">{greeting}</span>
+                <span className="hidden sm:inline font-semibold">
+                  <span className={nameColor}>{profile.full_name}</span>{roleSuffix}
+                </span>
                 <span className="opacity-60">|</span>
                 <Link to="/profile" className="hover:underline">개인정보 수정</Link>
                 <span className="opacity-60">|</span>
@@ -193,15 +217,15 @@ export function SiteHeader() {
                     <div className="h-7 w-7 rounded-full bg-primary text-primary-foreground grid place-items-center text-xs font-bold">
                       {profile.full_name.slice(0, 1)}
                     </div>
-                    <span className="hidden sm:inline text-sm font-medium">{profile.full_name}</span>
+                    <span className={cn("hidden sm:inline text-sm font-medium", dropdownNameColor)}>{profile.full_name}</span>
                     <ChevronDown className="h-3 w-3 text-muted-foreground" />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel>
-                    <div className="font-medium">{profile.full_name}</div>
+                    <div className={cn("font-medium", dropdownNameColor)}>{profile.full_name}</div>
                     <div className="text-xs text-muted-foreground font-normal">
-                      {ROLE_LABEL[profile.role]}
+                      {profile.role === "student" && profile.can_write_notice ? "과대표" : ROLE_LABEL[profile.role]}
                       {profile.student_id ? ` · ${profile.student_id}` : ` · ${profile.email}`}
                     </div>
                   </DropdownMenuLabel>

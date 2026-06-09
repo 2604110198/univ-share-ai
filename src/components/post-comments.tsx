@@ -83,7 +83,11 @@ export function PostComments({ postId, profile, allowSecret = false }: { postId:
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground mb-1">
-                    <span className="font-medium text-foreground">{c.author_name}</span>
+                    <span className={`font-medium ${
+                      c.author_role === "admin" ? "text-red-600" :
+                      c.author_role === "professor" ? "text-blue-600" :
+                      "text-foreground"
+                    }`}>{c.author_name}</span>
                     <span>{ROLE_LABEL[c.author_role] ?? c.author_role}</span>
                     {c.is_secret && <span className="inline-flex items-center gap-1 text-accent"><Lock className="h-3 w-3" /> 비밀댓글</span>}
                     <span>{formatDate(c.created_at)}</span>
